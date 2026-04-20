@@ -103,11 +103,29 @@ export async function updateSession(request: NextRequest) {
 }
 ```
 
+### `admin.ts` (service_role 전용)
+
+```ts
+// src/lib/supabase/admin.ts
+// ⚠️ 서버에서만 import. 클라이언트 번들에 절대 들어가면 안 됨.
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/db.generated";
+
+export function createAdminClient() {
+  return createClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
+}
+```
+
+사용처: `src/lib/ai/cache.ts` (AI 캐시 저장), `src/app/api/og/` (Dynamic OG), 계정 삭제 admin 작업.
+
 ### DO / DON'T
 
 - DO: 각 파일에서 `const supabase = await createClient()` 로 인스턴스화.
 - DON'T: 전역 싱글톤 export. 요청마다 새로 만든다(쿠키 문맥이 다름).
-- DON'T: `SUPABASE_SERVICE_ROLE_KEY`를 이 파일들에 쓰기. **service role은 별도 admin 클라이언트**로, 관리자 작업 파일에서만.
+- DON'T: `SUPABASE_SERVICE_ROLE_KEY`를 server/browser/middleware 파일에 쓰기. **service role은 `admin.ts`에서만.**
 
 ---
 
@@ -116,13 +134,14 @@ export async function updateSession(request: NextRequest) {
 **테이블 생성과 RLS 활성화는 한 세트.** 정책 없이 테이블 두지 않는다.
 
 ```sql
+-- ⚠️ DRAFT — 실행 전 feature-guide.md 스키마와 컬럼명 일치 확인
 -- supabase/migrations/0001_core_tables.sql
 
 -- users
 create table public.users (
   id uuid primary key references auth.users on delete cascade,
   nickname text not null,
-  face_image_path text,           -- private bucket 안의 path
+  face_image_url text,            -- private bucket 안의 path (Storage URL)
   face_reference_data jsonb,
   gender text,
   age_range text,

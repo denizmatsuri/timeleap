@@ -30,7 +30,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ## 전역 금지
 
 - `any` (불가피하면 `unknown` + narrowing), `var`, 인라인 `style`, 상대 경로 import (`@/` alias만 사용), `console.log` 커밋, 하드코딩된 매직 문자열.
-- **API Route는 webhook · 외부 콜백 · Dynamic OG에만.** mutation은 Server Action 우선.
+- **API Route는 webhook · 외부 콜백 · Dynamic OG · AI 스트리밍(ReadableStream/SSE)에만.** mutation은 Server Action 우선.
 - Server Component에서 `useState` / 브라우저 API 사용.
 - `components/ui/*` (shadcn 원본) 직접 수정 — wrapper 컴포넌트로 확장.
 - 죽은 코드 / 미사용 import 남기기.

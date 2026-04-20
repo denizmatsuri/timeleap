@@ -129,50 +129,22 @@ export async function generateClaudeText({
 
 ---
 
-## 4. Gemini Nano Banana 2 래퍼
+## 4. Gemini 이미지 생성 래퍼
 
-```ts
-// src/lib/ai/gemini.ts
-import { GoogleGenAI } from "@google/genai";
-import { getFaceSignedUrl } from "@/lib/supabase/storage";
+> **TODO: Gemini API 확정 후 구현.**
+>
+> 구현 전 반드시 확인:
+> 1. 실제 모델 ID — [Google AI Studio](https://aistudio.google.com/) 또는 [공식 문서](https://ai.google.dev/gemini-api/docs/image-generation) 에서 확인
+> 2. 얼굴 참조 이미지 입력 방식 — `inlineData` vs URL 입력 지원 여부
+> 3. 응답에서 이미지 바이트 추출 shape
 
-const client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+파일 위치: `src/lib/ai/gemini.ts`
 
-// Nano Banana 2 — preview 상태. API 스펙 바뀔 수 있음 → 수정 전 최신 문서 확인.
-const MODEL_ID = "gemini-3.1-flash-image-preview";
-
-export interface GenerateSceneImageInput {
-  userId: string;
-  faceStoragePaths: string[]; // faces/<uid>/...
-  scenePrompt: string;
-}
-
-export async function generateSceneImage({
-  userId,
-  faceStoragePaths,
-  scenePrompt,
-}: GenerateSceneImageInput): Promise<ArrayBuffer> {
-  const urls = await Promise.all(faceStoragePaths.map((p) => getFaceSignedUrl(p)));
-  // urls를 통해 이미지 바이트를 가져와 inlineData로 첨부하거나, API가 URL 입력을 지원하면 URL로.
-  // 실제 호출 shape은 현재 preview 문서 확인.
-  const res = await client.models.generateContent({
-    model: MODEL_ID,
-    contents: [
-      { parts: [{ text: scenePrompt }, ...(await urlsToParts(urls))] },
-    ],
-  });
-  const image = extractImageBytes(res);
-  if (!image) throw new Error("GEMINI_NO_IMAGE");
-  return image;
-}
-```
-
-### 규칙 & 주의
-
-- **MODEL_ID는 preview.** API shape 드리프트 위험 — 파일 수정 전 반드시 최신 문서 체크.
-- 얼굴 이미지는 **signed URL만** 사용 (TTL 60초 권장).
-- **SynthID 워터마크**는 자동 포함 — 제거 불가, 이용약관에 안내 필요.
-- 업그레이드 경로: Nano Banana Pro — 비용 측정 후 feature flag로 전환.
+구현 시 지켜야 할 규칙:
+- 얼굴 이미지는 **signed URL만** (TTL 60초) — public URL 금지
+- **SynthID 워터마크** 자동 포함 → 이용약관에 안내 필요
+- `GEMINI_API_KEY`는 서버 전용 env (NEXT_PUBLIC_ 금지)
+- 함수 시그니처: `generateSceneImage(input: GenerateSceneImageInput): Promise<ArrayBuffer>`
 
 ---
 
@@ -258,33 +230,22 @@ const text = await withAiCache(
 
 ## 6. 2계층 Rate Limit
 
-### Edge (IP)
+> **TODO: KV 스토어 연동 후 구현.**
+>
+> 구현 선택지: [@upstash/ratelimit](https://github.com/upstash/ratelimit-js) (Upstash Redis) 또는 Vercel KV
 
-```ts
-// src/lib/rate-limit/edge.ts
-// middleware에서 호출. AI 경로 + /api/** 만 적용.
-export async function edgeRateLimit(request: Request) {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0] ?? "anonymous";
-  // Upstash Redis or Vercel KV 기반 token bucket
-  // 구현은 실제 KV 붙일 때.
-  return shouldLimit({ key: `ip:${ip}`, capacity: 30, refillPerSec: 1 });
-}
+### 설계 원칙
+
+- **2계층 필수:** edge(IP) + action(user). AI 비용 경로는 반드시 둘 다 통과.
+- Edge rate limit은 `src/middleware.ts`에서 AI 경로 진입 전 적용.
+- Action rate limit은 Server Action 시작부에 `checkRateLimit()` 호출.
+
+### 파일 위치
+
 ```
-
-### Action (user)
-
-```ts
-// src/lib/rate-limit/action.ts
-export async function checkRateLimit({
-  userId,
-  key,
-}: {
-  userId: string;
-  key: string;
-}) {
-  // 유저별 token bucket
-  return shouldLimit({ key: `user:${userId}:${key}`, capacity: 5, refillPerSec: 0.01 });
-}
+src/lib/rate-limit/
+├── edge.ts    # middleware용 — IP 기반
+└── action.ts  # Server Action용 — user 기반
 ```
 
 ### 정책 (초안)
@@ -294,7 +255,18 @@ export async function checkRateLimit({
 | 모든 `/api/**` | edge(IP) | 30 req / min |
 | `/time-machine/result/**` | edge(IP) | 10 req / min |
 | `createDiary` Server Action | action(user) | 5회 / hour |
-| `generateClaudeText` / `generateSceneImage` 호출 | cache + action 이후에만 실행 | |
+| `generateClaudeText` / `generateSceneImage` | cache + action 이후에만 실행 | |
+
+### 인터페이스 (구현 시 맞출 것)
+
+```ts
+// edge.ts
+export async function edgeRateLimit(request: NextRequest): Promise<boolean>
+// true = 제한됨
+
+// action.ts
+export async function checkRateLimit(args: { userId: string; key: string }): Promise<{ ok: boolean }>
+```
 
 ---
 

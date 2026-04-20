@@ -167,13 +167,15 @@ export function useToggleLike(diaryId: string) {
       const previous = qc.getQueryData<Diary>(diaryKeys.detail(diaryId));
 
       // 3. 낙관적 업데이트
+      type DiaryWithLikes = Diary & { likes_count: number; liked_by_me: boolean };
       if (previous) {
-        qc.setQueryData<Diary & { liked_by_me?: boolean; likes_count?: number }>(
+        const prev = previous as DiaryWithLikes;
+        qc.setQueryData<DiaryWithLikes>(
           diaryKeys.detail(diaryId),
           {
-            ...previous,
+            ...prev,
             liked_by_me: nextLiked,
-            likes_count: (previous as any).likes_count + (nextLiked ? 1 : -1),
+            likes_count: prev.likes_count + (nextLiked ? 1 : -1),
           },
         );
       }
