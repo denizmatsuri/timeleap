@@ -33,7 +33,7 @@
   let step = 0;
   let photos = [null, null, null];
   let faceValid = [false, false, false];
-  let name = '', gender = '', ageRange = '';
+  var profileName = '', gender = '', ageRange = '';
 
   function renderProgress() {
     document.getElementById('onb-progress').innerHTML = STEPS.map((s, i) => `
@@ -98,7 +98,7 @@
       <div class="onb-form">
         <label class="field">
           <span>닉네임</span>
-          <input type="text" placeholder="예: 지민" value="${name}" oninput="name=this.value;updateNext1()" maxlength="16"/>
+          <input type="text" placeholder="예: 지민" value="${profileName}" oninput="profileName=this.value;updateNext1()" maxlength="16"/>
         </label>
         <div class="field">
           <span>성별</span>
@@ -118,7 +118,7 @@
       <div class="onb-foot">
         <button class="btn btn-ghost" onclick="goStep(0)">← 이전</button>
         <button class="btn btn-primary btn-big" id="next1"
-          ${(!name||!gender||!ageRange)?'disabled':''}
+          ${(!profileName||!gender||!ageRange)?'disabled':''}
           onclick="goStep(2)">
           다음 단계 →
         </button>
@@ -139,7 +139,7 @@
         <div class="passport-top">
           <div>
             <div class="passport-label">TIMELEAP PASSPORT</div>
-            <div class="passport-name">${name}</div>
+            <div class="passport-name">${profileName}</div>
           </div>
           <div class="passport-seal">
             <div class="seal-ring">VALID<br/>2026</div>
@@ -193,11 +193,11 @@
 
   function updateNext1() {
     const btn = document.getElementById('next1');
-    if (btn) btn.disabled = !name || !gender || !ageRange;
+    if (btn) btn.disabled = !profileName || !gender || !ageRange;
   }
 
   function finish() {
-    State.setProfile({ name, gender, ageRange, hasFace: true });
+    State.setProfile({ name: profileName, gender, ageRange, hasFace: true });
     Router.go('timemachine');
   }
 
