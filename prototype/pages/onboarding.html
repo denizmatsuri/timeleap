@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>온보딩 — Timeleap</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Geist:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="../css/global.css"/>
+  <link rel="stylesheet" href="../css/components.css"/>
+</head>
+<body>
+<div class="app" data-theme="paper">
+  <div class="paper-grain"></div>
+
+  <div class="screen onboarding">
+    <div class="onboarding-inner">
+      <!-- Progress -->
+      <div class="onb-progress" id="onb-progress"></div>
+      <!-- Content -->
+      <div id="onb-content"></div>
+    </div>
+  </div>
+</div>
+
+<script src="../js/data.js"></script>
+<script src="../js/state.js"></script>
+<script src="../js/router.js"></script>
+<script src="../js/components.js"></script>
+<script>
+  const STEPS = ['얼굴 사진', '프로필', '완료'];
+  let step = 0;
+  let photos = [null, null, null];
+  let faceValid = [false, false, false];
+  var profileName = '', gender = '', ageRange = '';
+
+  function renderProgress() {
+    document.getElementById('onb-progress').innerHTML = STEPS.map((s, i) => `
+      <div class="onb-step${i <= step ? ' active' : ''}">
+        <div class="onb-step-dot">${i < step ? '✓' : i + 1}</div>
+        <div class="onb-step-label">${s}</div>
+      </div>`).join('');
+  }
+
+  function renderStep0() {
+    document.getElementById('onb-content').innerHTML = `
+    <section class="onb-section">
+      <div class="onb-head">
+        <span class="stamp">STEP 01</span>
+        <h1>얼굴 사진을 올려 주세요</h1>
+        <p>정면을 본 선명한 사진 <strong>1~3장</strong>. 재사용되므로 한 번만 올리면 됩니다.</p>
+      </div>
+      <div class="face-upload-grid">
+        ${[0,1,2].map(i => `
+        <div class="face-slot${photos[i]?' filled':''}${faceValid[i]?' valid':''}" id="slot-${i}">
+          ${photos[i] ? `
+            ${placeholderPhoto(photos[i], i+2, 'portrait')}
+            <div class="face-slot-overlay">
+              ${faceValid[i]
+                ? `<div class="face-check">✓ 얼굴 감지됨</div>`
+                : `<div class="face-checking"><div class="scanner"></div> 분석 중…</div>`}
+            </div>
+            <button class="face-remove" onclick="removePhoto(${i})">✕</button>
+          ` : `
+            <button class="face-empty" onclick="addPhoto(${i})">
+              <svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10V3M5 6l3-3 3 3"/><path d="M3 12h10"/></svg>
+              <span>사진 ${i===0?'정면':i===1?'옆면':'미소'}</span>
+              <small>${i===0?'필수':'권장'}</small>
+            </button>
+          `}
+        </div>`).join('')}
+      </div>
+      <div class="onb-tips">
+        <div class="tip"><span class="tip-ok">✓</span> 밝은 곳, 얼굴 중심</div>
+        <div class="tip"><span class="tip-ok">✓</span> 마스크·짙은 선글라스 X</div>
+        <div class="tip"><span class="tip-ok">✓</span> 최소 512px 해상도</div>
+      </div>
+      <div class="onb-foot">
+        <button class="btn btn-ghost" onclick="Router.go('landing')">취소</button>
+        <button class="btn btn-primary btn-big" id="next0"
+          ${(!photos.some(Boolean) || !faceValid.every((v,i)=>!photos[i]||v)) ? 'disabled' : ''}
+          onclick="goStep(1)">
+          다음 단계 →
+        </button>
+      </div>
+    </section>`;
+  }
+
+  function renderStep1() {
+    document.getElementById('onb-content').innerHTML = `
+    <section class="onb-section">
+      <div class="onb-head">
+        <span class="stamp">STEP 02</span>
+        <h1>어떻게 불러 드릴까요</h1>
+        <p>닉네임과 간단한 정보가 더 섬세한 시대 경험을 만듭니다.</p>
+      </div>
+      <div class="onb-form">
+        <label class="field">
+          <span>닉네임</span>
+          <input type="text" placeholder="예: 지민" value="${profileName}" oninput="profileName=this.value;updateNext1()" maxlength="16"/>
+        </label>
+        <div class="field">
+          <span>성별</span>
+          <div class="radio-row">
+            ${['여성','남성','기타','비공개'].map(g=>`
+            <button class="radio-chip${gender===g?' active':''}" onclick="gender='${g}';renderStep1()">${g}</button>`).join('')}
+          </div>
+        </div>
+        <div class="field">
+          <span>연령대</span>
+          <div class="radio-row">
+            ${['10대','20대','30대','40대','50대+'].map(a=>`
+            <button class="radio-chip${ageRange===a?' active':''}" onclick="ageRange='${a}';renderStep1()">${a}</button>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="onb-foot">
+        <button class="btn btn-ghost" onclick="goStep(0)">← 이전</button>
+        <button class="btn btn-primary btn-big" id="next1"
+          ${(!profileName||!gender||!ageRange)?'disabled':''}
+          onclick="goStep(2)">
+          다음 단계 →
+        </button>
+      </div>
+    </section>`;
+  }
+
+  function renderStep2() {
+    const photoSrc = photos[0] ? placeholderPhoto(photos[0], 2, 'portrait') : '';
+    document.getElementById('onb-content').innerHTML = `
+    <section class="onb-section onb-final">
+      <div class="onb-head">
+        <span class="stamp" style="color:var(--sage)">READY</span>
+        <h1>여권이 준비되었습니다</h1>
+        <p>이제 어느 시대로든 떠날 수 있어요.</p>
+      </div>
+      <div class="passport">
+        <div class="passport-top">
+          <div>
+            <div class="passport-label">TIMELEAP PASSPORT</div>
+            <div class="passport-name">${profileName}</div>
+          </div>
+          <div class="passport-seal">
+            <div class="seal-ring">VALID<br/>2026</div>
+          </div>
+        </div>
+        <div class="passport-body">
+          <div class="passport-photo">${photoSrc}</div>
+          <div class="passport-info">
+            <div><span>GENDER</span><strong>${gender}</strong></div>
+            <div><span>AGE</span><strong>${ageRange}</strong></div>
+            <div><span>ISSUED</span><strong>2026.04.20</strong></div>
+            <div><span>TRIPS</span><strong>0</strong></div>
+          </div>
+        </div>
+      </div>
+      <div class="onb-foot onb-foot-center">
+        <button class="btn btn-primary btn-big" onclick="finish()">
+          ✦ 첫 여행 떠나기
+        </button>
+      </div>
+    </section>`;
+  }
+
+  function goStep(n) {
+    step = n;
+    renderProgress();
+    if (step === 0) renderStep0();
+    else if (step === 1) renderStep1();
+    else renderStep2();
+  }
+
+  function addPhoto(i) {
+    const palettes = [
+      ['#c9944a','#f4b860','#3a2e20'],
+      ['#d97f5a','#c9944a','#2a1d3b'],
+      ['#70a840','#c9944a','#f4b860'],
+    ];
+    photos[i] = palettes[i];
+    renderStep0();
+    setTimeout(() => {
+      faceValid[i] = true;
+      renderStep0();
+    }, 900);
+  }
+
+  function removePhoto(i) {
+    photos[i] = null;
+    faceValid[i] = false;
+    renderStep0();
+  }
+
+  function updateNext1() {
+    const btn = document.getElementById('next1');
+    if (btn) btn.disabled = !profileName || !gender || !ageRange;
+  }
+
+  function finish() {
+    State.setProfile({ name: profileName, gender, ageRange, hasFace: true });
+    Router.go('timemachine');
+  }
+
+  // Init
+  goStep(0);
+</script>
+</body>
+</html>

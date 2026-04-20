@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>타임머신 — Timeleap</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Geist:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="../css/global.css"/>
+  <link rel="stylesheet" href="../css/components.css"/>
+</head>
+<body>
+<div class="app" data-theme="paper">
+  <div class="paper-grain"></div>
+  <div id="nav-root"></div>
+
+  <div class="screen time-machine">
+    <div class="tm-cosmos"><div class="tm-cosmos-glow" id="cosmos-glow"></div></div>
+    <div class="tm-layout">
+      <!-- Globe -->
+      <div class="tm-globe-wrap">
+        <div class="tm-globe-label">
+          <span class="tm-label-small">SPATIAL</span>
+          <span class="tm-label-big">어디로 갈까요</span>
+        </div>
+        <div class="tm-globe-stage" id="globe-stage">
+          <svg id="globe-svg" width="460" height="460" viewBox="0 0 460 460" style="cursor:grab;overflow:visible"></svg>
+        </div>
+        <div class="tm-globe-hint">🧭 드래그해서 지구를 돌리거나 점을 선택하세요</div>
+        <div class="country-pills" id="country-pills"></div>
+      </div>
+
+      <!-- Side panel -->
+      <div class="tm-side">
+        <div class="tm-destination">
+          <div class="tm-dest-label">DESTINATION</div>
+          <div class="tm-dest-big">
+            <div class="tm-dest-year" id="dest-year"></div>
+            <div class="tm-dest-slash">/</div>
+            <div class="tm-dest-country">
+              <span class="tm-dest-flag" id="dest-flag"></span>
+              <span id="dest-country-name"></span>
+            </div>
+          </div>
+          <div class="tm-dest-title" id="dest-title"></div>
+          <div class="tm-dest-blurb" id="dest-blurb"></div>
+        </div>
+
+        <div class="tm-timeline">
+          <div class="tm-label-small">TEMPORAL</div>
+          <div class="tm-label-big">언제로 갈까요</div>
+          <div class="timeline-rail-wrap">
+            <div class="timeline-rail" id="timeline-rail"></div>
+          </div>
+          <div class="era-detail-card" id="era-detail-card"></div>
+        </div>
+
+        <div class="tm-actions">
+          <button class="btn btn-ghost" onclick="randomize()">🎲 랜덤 좌표</button>
+          <button class="btn btn-primary btn-big depart-btn" onclick="depart()">✦ 출발</button>
+        </div>
+        <div class="tm-meta">
+          <div>예상 소요시간 · <strong>30–60초</strong></div>
+          <div>결과물 · <strong>사진 3–5장 + 일기</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../js/data.js"></script>
+<script src="../js/state.js"></script>
+<script src="../js/router.js"></script>
+<script src="../js/components.js"></script>
+<script>
+  document.getElementById('nav-root').innerHTML = renderNav('timemachine');
+
+  /* ---- Globe ---- */
+  const CONTINENTS = [
+    'M-145,55 L-130,62 L-125,65 L-110,68 L-95,65 L-85,55 L-80,40 L-75,28 L-82,18 L-95,15 L-105,20 L-115,30 L-125,40 L-140,45 Z',
+    'M-75,-5 L-65,-10 L-55,-20 L-52,-35 L-58,-45 L-68,-48 L-75,-40 L-80,-25 L-82,-15 Z',
+    'M-5,55 L10,58 L25,55 L30,45 L25,40 L10,42 L0,48 Z',
+    'M-15,30 L5,32 L20,25 L30,10 L35,-10 L30,-28 L20,-35 L10,-30 L0,-15 L-10,0 L-15,15 Z',
+    'M35,55 L55,60 L80,58 L110,55 L130,48 L140,40 L130,30 L115,25 L100,30 L80,25 L60,35 L45,40 L35,45 Z',
+    'M60,25 L72,22 L78,15 L80,5 L75,0 L68,8 L62,18 Z',
+    'M95,0 L115,-2 L125,-8 L115,-12 L100,-10 Z',
+    'M115,-25 L140,-22 L148,-30 L142,-40 L125,-42 L115,-35 Z',
+    'M-45,70 L-30,75 L-20,72 L-25,62 L-40,60 Z',
+  ];
+
+  function parsePath(d) {
+    const nums = d.match(/-?\d+(?:\.\d+)?/g) || [];
+    const pts = [];
+    for (let i = 0; i < nums.length; i += 2) pts.push([parseFloat(nums[i]), parseFloat(nums[i+1])]);
+    return pts;
+  }
+
+  function project(lat, lng, rotateLng, rotateLat = 0, r = 150) {
+    const λ = (lng - rotateLng) * Math.PI / 180;
+    const φ = lat * Math.PI / 180;
+    const φ0 = rotateLat * Math.PI / 180;
+    const cosC = Math.sin(φ0)*Math.sin(φ) + Math.cos(φ0)*Math.cos(φ)*Math.cos(λ);
+    if (cosC < 0) return null;
+    return {
+      x: r * Math.cos(φ) * Math.sin(λ),
+      y: r * (Math.cos(φ0)*Math.sin(φ) - Math.sin(φ0)*Math.cos(φ)*Math.cos(λ)),
+      depth: cosC
+    };
+  }
+
+  const SIZE = 460, CX = 230, CY = 230, R = 210;
+  let rotateLng = -60;
+  const ROTATE_LAT = 12;
+  let selectedCountry = 'US';
+
+  function drawGlobe() {
+    const svg = document.getElementById('globe-svg');
+    let html = `
+    <defs>
+      <radialGradient id="gsph" cx="35%" cy="30%">
+        <stop offset="0%" stop-color="#2d355e"/>
+        <stop offset="60%" stop-color="#151a33"/>
+        <stop offset="100%" stop-color="#0c0f1f"/>
+      </radialGradient>
+      <radialGradient id="gglow">
+        <stop offset="60%" stop-color="#c9944a" stop-opacity="0"/>
+        <stop offset="90%" stop-color="#c9944a" stop-opacity="0.25"/>
+        <stop offset="100%" stop-color="#c9944a" stop-opacity="0"/>
+      </radialGradient>
+      <clipPath id="sclip"><circle cx="${CX}" cy="${CY}" r="${R}"/></clipPath>
+    </defs>
+    <circle cx="${CX}" cy="${CY}" r="${R+16}" fill="url(#gglow)"/>
+    <circle cx="${CX}" cy="${CY}" r="${R}" fill="url(#gsph)" stroke="#c9944a" stroke-width="0.8" stroke-opacity="0.4"/>`;
+
+    // Parallels & meridians
+    html += `<g clip-path="url(#sclip)" opacity="0.22">`;
+    [-60,-30,0,30,60].forEach(lat => {
+      const pts = [];
+      for (let lng = -180; lng <= 180; lng += 5) {
+        const p = project(lat, lng, rotateLng, ROTATE_LAT, R);
+        if (p) pts.push(`${CX+p.x},${CY-p.y}`);
+      }
+      if (pts.length > 1) html += `<polyline points="${pts.join(' ')}" fill="none" stroke="#c9944a" stroke-width="0.6"/>`;
+    });
+    [-180,-150,-120,-90,-60,-30,0,30,60,90,120,150].forEach(lng => {
+      const pts = [];
+      for (let lat = -80; lat <= 80; lat += 5) {
+        const p = project(lat, lng, rotateLng, ROTATE_LAT, R);
+        if (p) pts.push(`${CX+p.x},${CY-p.y}`);
+      }
+      if (pts.length > 1) html += `<polyline points="${pts.join(' ')}" fill="none" stroke="#c9944a" stroke-width="0.6"/>`;
+    });
+    html += `</g>`;
+
+    // Continents
+    html += `<g clip-path="url(#sclip)">`;
+    CONTINENTS.forEach(d => {
+      const pts = parsePath(d);
+      const proj = pts.map(([lng,lat]) => project(lat, lng, rotateLng, ROTATE_LAT, R)).filter(Boolean);
+      if (proj.length < 3) return;
+      const pathStr = proj.map((p,j) => `${j===0?'M':'L'}${CX+p.x},${CY-p.y}`).join(' ') + ' Z';
+      html += `<path d="${pathStr}" fill="#c9944a" fill-opacity="0.85" stroke="#e8c98a" stroke-width="0.5" stroke-opacity="0.5"/>`;
+    });
+    html += `</g>`;
+
+    // Country markers
+    html += `<g clip-path="url(#sclip)">`;
+    COUNTRIES.forEach(c => {
+      const p = project(c.lat, c.lng, rotateLng, ROTATE_LAT, R);
+      if (!p) return;
+      const isSel = selectedCountry === c.code;
+      const sc = 0.6 + p.depth * 0.4;
+      html += `<g transform="translate(${CX+p.x},${CY-p.y})" onclick="pickCountry('${c.code}')" style="cursor:pointer">`;
+      if (isSel) {
+        html += `<circle r="${14*sc}" fill="none" stroke="#fdf6e3" stroke-width="1.5" opacity="0.8">
+          <animate attributeName="r" from="${8*sc}" to="${24*sc}" dur="1.8s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" from="0.8" to="0" dur="1.8s" repeatCount="indefinite"/>
+        </circle>`;
+      }
+      html += `<circle r="${isSel?6*sc:4*sc}" fill="${isSel?'#fdf6e3':'#d97f5a'}" stroke="#0c0f1f" stroke-width="1"/>`;
+      if (p.depth > 0.5) html += `<text x="10" y="4" fill="#fdf6e3" font-size="10" font-family="JetBrains Mono,monospace" opacity="${isSel?1:0.65}">${c.code}</text>`;
+      html += `<circle r="16" fill="transparent"/>`;
+      html += `</g>`;
+    });
+    html += `</g>`;
+
+    // Shadow
+    html += `<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="#0c0f1f" stroke-width="1" opacity="0.8"/>`;
+    html += `<ellipse cx="${CX+R*0.25}" cy="${CY}" rx="${R*0.85}" ry="${R}" fill="#0c0f1f" opacity="0.18" clip-path="url(#sclip)"/>`;
+
+    svg.innerHTML = html;
+  }
+
+  /* ---- Drag ---- */
+  let dragging = false, dragStartX = 0, dragStartLng = 0;
+  let autoRotate = true;
+  const stage = document.getElementById('globe-stage');
+
+  stage.addEventListener('pointerdown', e => {
+    dragging = true;
+    autoRotate = false;
+    dragStartX = e.clientX;
+    dragStartLng = rotateLng;
+    stage.style.cursor = 'grabbing';
+    e.preventDefault();
+  });
+  window.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    rotateLng = dragStartLng + (e.clientX - dragStartX) * 0.5;
+    drawGlobe();
+  });
+  window.addEventListener('pointerup', () => {
+    if (!dragging) return;
+    dragging = false;
+    stage.style.cursor = 'grab';
+    setTimeout(() => { autoRotate = true; }, 2000);
+  });
+
+  /* ---- Auto-rotate ---- */
+  let raf;
+  function tick() {
+    if (autoRotate && !dragging) {
+      rotateLng += 0.15;
+      drawGlobe();
+    }
+    raf = requestAnimationFrame(tick);
+  }
+  raf = requestAnimationFrame(tick);
+
+  /* ---- Pick country ---- */
+  function pickCountry(code) {
+    selectedCountry = code;
+    autoRotate = false;
+    const c = COUNTRIES.find(x => x.code === code);
+    const target = -c.lng;
+    let from = rotateLng % 360;
+    if (from > 180) from -= 360;
+    if (from < -180) from += 360;
+    const delta = target - from;
+    const start = performance.now();
+    const dur = 900;
+    function anim(now) {
+      const t = Math.min(1, (now - start) / dur);
+      const eased = 1 - Math.pow(1 - t, 3);
+      rotateLng = from + delta * eased;
+      drawGlobe();
+      if (t < 1) requestAnimationFrame(anim);
+      else setTimeout(() => { autoRotate = true; }, 1800);
+    }
+    requestAnimationFrame(anim);
+    updateDestination();
+    renderCountryPills();
+  }
+
+  /* ---- Era ---- */
+  let eraIdx = 2;
+  function renderTimeline() {
+    const n = ERAS.length - 1;
+    let html = `<div class="rail-line"></div>`;
+    ERAS.forEach((e, i) => {
+      html += `<button class="rail-node${i===eraIdx?' active':''}" onclick="pickEra(${i})"
+        style="left:${(i/n)*100}%">
+        <div class="rail-dot"></div>
+        <div class="rail-year">${e.label}</div>
+        <div class="rail-emoji">${e.emoji}</div>
+      </button>`;
+    });
+    html += `<div class="rail-indicator" style="left:${(eraIdx/n)*100}%"></div>`;
+    document.getElementById('timeline-rail').innerHTML = html;
+  }
+
+  function pickEra(i) {
+    eraIdx = i;
+    renderTimeline();
+    updateDestination();
+    updateCosmos();
+  }
+
+  function updateDestination() {
+    const era = ERAS[eraIdx];
+    const country = COUNTRIES.find(c => c.code === selectedCountry) || COUNTRIES[0];
+    document.getElementById('dest-year').textContent = era.year;
+    document.getElementById('dest-flag').textContent = country.flag;
+    document.getElementById('dest-country-name').textContent = country.name;
+    document.getElementById('dest-title').innerHTML = `<span class="tm-dest-emoji">${era.emoji}</span> ${era.title}`;
+    document.getElementById('dest-blurb').textContent = era.blurb;
+    document.getElementById('era-detail-card').innerHTML = `
+      <div class="era-detail-head">
+        <div class="era-detail-year">${era.year}</div>
+        <div class="era-detail-name">${era.title}</div>
+      </div>
+      <div class="era-detail-body">${era.blurb}</div>
+      <div class="era-detail-tags">
+        <span class="chip chip-outline">${era.label}</span>
+        <span class="chip chip-outline">${country.name}</span>
+        <span class="chip chip-outline">#하루</span>
+      </div>`;
+  }
+
+  function updateCosmos() {
+    const era = ERAS[eraIdx];
+    const color = era.hue ? `oklch(0.45 0.12 ${era.hue})` : '#2d355e';
+    document.getElementById('cosmos-glow').style.background =
+      `radial-gradient(circle at 50% 40%, ${color}22 0%, transparent 60%)`;
+  }
+
+  function renderCountryPills() {
+    document.getElementById('country-pills').innerHTML =
+      COUNTRIES.map(c => `
+      <button class="country-pill${selectedCountry===c.code?' active':''}" onclick="pickCountry('${c.code}')">
+        <span>${c.flag}</span> ${c.name}
+      </button>`).join('');
+  }
+
+  function randomize() {
+    const cc = COUNTRIES[Math.floor(Math.random() * COUNTRIES.length)];
+    const ei = Math.floor(Math.random() * ERAS.length);
+    eraIdx = ei;
+    pickCountry(cc.code);
+    renderTimeline();
+    updateDestination();
+    updateCosmos();
+  }
+
+  function depart() {
+    State.setPending({ era: ERAS[eraIdx].id, country: selectedCountry });
+    Router.go('departure', { era: ERAS[eraIdx].id, country: selectedCountry });
+  }
+
+  // Init
+  drawGlobe();
+  renderTimeline();
+  renderCountryPills();
+  updateDestination();
+  updateCosmos();
+</script>
+</body>
+</html>
