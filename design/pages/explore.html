@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>공개 갤러리 — Timeleap</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Geist:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="../css/global.css"/>
+  <link rel="stylesheet" href="../css/components.css"/>
+</head>
+<body>
+<div class="app" data-theme="paper">
+  <div class="paper-grain"></div>
+  <div id="nav-root"></div>
+
+  <div class="screen explore-screen">
+    <section class="explore-hero">
+      <div class="container">
+        <div class="section-label">PUBLIC ARCHIVE</div>
+        <h1 class="explore-title">수천 개의 <em>불가능한 하루</em>들</h1>
+        <p class="explore-sub">
+          누군가가 1925년 뉴욕에서, 또 누군가는 1968년 샌프란시스코에서 보낸 하루.<br/>
+          다른 여행자들의 기록을 만나 보세요.
+        </p>
+      </div>
+    </section>
+
+    <section class="explore-filters-section">
+      <div class="container">
+        <div class="filter-row">
+          <div class="filter-group">
+            <div class="filter-label">시대</div>
+            <div class="filter-chips" id="era-chips"></div>
+          </div>
+        </div>
+        <div class="filter-row">
+          <div class="filter-group">
+            <div class="filter-label">나라</div>
+            <div class="filter-chips" id="country-chips"></div>
+          </div>
+          <div class="sort-group" id="sort-chips"></div>
+        </div>
+        <div class="filter-results">
+          <span id="result-count"></span>
+          <span id="reset-btn"></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="explore-grid-section">
+      <div class="container">
+        <div class="explore-grid" id="explore-grid"></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="../js/data.js"></script>
+<script src="../js/state.js"></script>
+<script src="../js/router.js"></script>
+<script src="../js/components.js"></script>
+<script>
+  document.getElementById('nav-root').innerHTML = renderNav('explore');
+
+  let eraFilter = 'all', countryFilter = 'all', sort = 'recent';
+
+  function getFiltered() {
+    let list = FEED.filter(f => {
+      if (eraFilter !== 'all' && f.era !== eraFilter) return false;
+      if (countryFilter !== 'all' && f.country !== countryFilter) return false;
+      return true;
+    });
+    if (sort === 'popular') list = [...list].sort((a,b) => b.likes - a.likes);
+    return list;
+  }
+
+  function renderAll() {
+    // Era chips
+    document.getElementById('era-chips').innerHTML =
+      `<button class="filter-chip${eraFilter==='all'?' active':''}" onclick="setEra('all')">전체</button>` +
+      ERAS.map(e => `<button class="filter-chip${eraFilter===e.id?' active':''}" onclick="setEra('${e.id}')">${e.emoji} ${e.label}</button>`).join('');
+
+    // Country chips
+    document.getElementById('country-chips').innerHTML =
+      `<button class="filter-chip${countryFilter==='all'?' active':''}" onclick="setCountry('all')">전체</button>` +
+      COUNTRIES.map(c => `<button class="filter-chip${countryFilter===c.code?' active':''}" onclick="setCountry('${c.code}')">${c.flag} ${c.name}</button>`).join('');
+
+    // Sort
+    document.getElementById('sort-chips').innerHTML =
+      `<button class="filter-chip${sort==='recent'?' active':''}" onclick="setSort('recent')">최신순</button>` +
+      `<button class="filter-chip${sort==='popular'?' active':''}" onclick="setSort('popular')">인기순</button>`;
+
+    const filtered = getFiltered();
+    document.getElementById('result-count').textContent = `${filtered.length}개의 여행기`;
+    document.getElementById('reset-btn').innerHTML =
+      (eraFilter !== 'all' || countryFilter !== 'all')
+        ? `<button class="btn btn-tiny btn-ghost" onclick="resetFilters()">✕ 필터 초기화</button>`
+        : '';
+
+    document.getElementById('explore-grid').innerHTML =
+      filtered.map((f, i) => feedCard(f, i === 0)).join('');
+  }
+
+  function setEra(v) { eraFilter = v; renderAll(); }
+  function setCountry(v) { countryFilter = v; renderAll(); }
+  function setSort(v) { sort = v; renderAll(); }
+  function resetFilters() { eraFilter = 'all'; countryFilter = 'all'; renderAll(); }
+
+  renderAll();
+</script>
+</body>
+</html>

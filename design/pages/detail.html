@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>여행기 — Timeleap</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Geist:wght@400;500;600&family=Caveat:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="../css/global.css"/>
+  <link rel="stylesheet" href="../css/components.css"/>
+</head>
+<body>
+<div class="app" data-theme="paper">
+  <div class="paper-grain"></div>
+  <div id="nav-root"></div>
+  <div id="page-content"></div>
+</div>
+
+<script src="../js/data.js"></script>
+<script src="../js/state.js"></script>
+<script src="../js/router.js"></script>
+<script src="../js/components.js"></script>
+<script>
+  document.getElementById('nav-root').innerHTML = renderNav('');
+
+  const params = Router.getParams();
+  const id = params.id;
+  const diaries = State.getDiaries();
+  const feed = FEED.find(f => f.id === id) || diaries.find(f => f.id === id);
+
+  if (!feed) {
+    document.getElementById('page-content').innerHTML = `
+      <div class="container" style="padding:80px 20px;text-align:center">
+        여행기를 찾을 수 없습니다.<br/>
+        <button class="btn btn-ghost" style="margin-top:20px" onclick="Router.go('explore')">돌아가기</button>
+      </div>`;
+  } else {
+    const era = ERAS.find(e => e.id === feed.era);
+    const country = COUNTRIES.find(c => c.code === feed.country);
+    const diary = feed.diary || generateResult({ era: feed.era, country: feed.country, name: feed.author }).diary;
+
+    let liked = false, likes = feed.likes || 0;
+
+    const related = FEED.filter(f => f.id !== feed.id && (f.era === feed.era || f.country === feed.country)).slice(0, 3);
+
+    function renderPage() {
+      // Interleave photos and diary
+      let photosDiary = '';
+      feed.photos.forEach((photo, i) => {
+        photosDiary += `
+          <figure class="result-photo photo photo-tilt-${i%3}">
+            <div class="photo-inner">${placeholderPhoto(photo.palette, i*7+3)}</div>
+            <figcaption class="photo-caption">${photo.scene}</figcaption>
+          </figure>`;
+        if (diary[i]) photosDiary += `<p class="result-para">${diary[i]}</p>`;
+        if (diary[i + feed.photos.length]) photosDiary += `<p class="result-para">${diary[i + feed.photos.length]}</p>`;
+      });
+      diary.slice(feed.photos.length * 2).forEach(p => {
+        photosDiary += `<p class="result-para">${p}</p>`;
+      });
+
+      document.getElementById('page-content').innerHTML = `
+      <div class="screen detail-screen">
+        <div class="detail-hero">
+          <div class="container-narrow">
+            <button class="detail-back" onclick="Router.back()">← 돌아가기</button>
+            <div class="result-stamp-row">
+              <span class="stamp">ARRIVED · ${era.year}</span>
+              <span class="result-date">${feed.date}</span>
+            </div>
+            <div class="result-place">
+              <span class="result-flag">${country.flag}</span>
+              <span>${country.name} · ${feed.city}</span>
+              <span class="result-divider">/</span>
+              <span>${era.emoji} ${era.title}</span>
+            </div>
+            <h1 class="result-title">${feed.title}</h1>
+            <div class="detail-author">
+              <div class="feed-avatar" style="width:36px;height:36px;font-size:14px">${feed.authorInitial||feed.author.slice(0,1)}</div>
+              <div>
+                <div><strong>${feed.author}</strong>의 여행기</div>
+                <div class="detail-author-meta">👁 ${(feed.views||0).toLocaleString()} · ♡ <span id="like-count">${likes.toLocaleString()}</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="result-body">
+          <div class="container-narrow">${photosDiary}</div>
+        </div>
+
+        <div class="result-footer">
+          <div class="container-narrow">
+            <div class="result-tags">${feed.tags.map(t=>`<span class="chip">${t}</span>`).join('')}</div>
+            <div class="result-actions">
+              <button class="btn btn-ghost" id="like-btn" onclick="toggleLike()">♡ ${likes.toLocaleString()}</button>
+              <button class="btn btn-ghost">↑ 공유</button>
+              <button class="btn btn-primary" onclick="Router.go('timemachine')">✦ 나도 떠나기</button>
+            </div>
+
+            <!-- Comments -->
+            <div class="comments">
+              <div class="comments-head">댓글 <span>3</span></div>
+              <div class="comment">
+                <div class="feed-avatar" style="background:linear-gradient(135deg,#70c4c4,#c4406b)">K</div>
+                <div class="comment-body">
+                  <div class="comment-name">경희</div>
+                  <div class="comment-text">와, 사진 분위기 너무 좋네요. 저도 같은 시대로 떠나 보고 싶어요.</div>
+                  <div class="comment-meta">2시간 전 · <button>답글</button></div>
+                </div>
+              </div>
+              <div class="comment">
+                <div class="feed-avatar" style="background:linear-gradient(135deg,#c9944a,#d97f5a)">T</div>
+                <div class="comment-body">
+                  <div class="comment-name">태훈</div>
+                  <div class="comment-text">일기 문장이 진짜 그 시대 사람이 쓴 것 같아요. 👏</div>
+                  <div class="comment-meta">5시간 전 · <button>답글</button></div>
+                </div>
+              </div>
+              <div class="comment-input">
+                <div class="feed-avatar" style="background:linear-gradient(135deg,#c9944a,#c4406b)">나</div>
+                <input type="text" placeholder="댓글 남기기…"/>
+                <button class="btn btn-tiny btn-primary">보내기</button>
+              </div>
+            </div>
+
+            ${related.length > 0 ? `
+            <div class="related">
+              <div class="section-label">비슷한 여행기</div>
+              <div class="related-grid">${related.map(f => feedCard(f)).join('')}</div>
+            </div>` : ''}
+          </div>
+        </div>
+      </div>`;
+    }
+
+    function toggleLike() {
+      liked = !liked;
+      likes += liked ? 1 : -1;
+      const btn = document.getElementById('like-btn');
+      if (btn) {
+        btn.textContent = (liked ? '♥ ' : '♡ ') + likes.toLocaleString();
+        btn.classList.toggle('liked', liked);
+      }
+      const cnt = document.getElementById('like-count');
+      if (cnt) cnt.textContent = likes.toLocaleString();
+    }
+
+    renderPage();
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>출발 — Timeleap</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Geist:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="../css/global.css"/>
+  <link rel="stylesheet" href="../css/components.css"/>
+</head>
+<body>
+<div class="app" data-theme="dark">
+  <div class="screen departure" id="dep-screen">
+    <!-- Stars -->
+    <div class="dep-stars" id="dep-stars"></div>
+    <!-- Tunnel -->
+    <div class="dep-tunnel dep-tunnel-0" id="dep-tunnel">
+      <div class="dep-ring"></div><div class="dep-ring" style="animation-delay:.18s"></div>
+      <div class="dep-ring" style="animation-delay:.36s"></div><div class="dep-ring" style="animation-delay:.54s"></div>
+      <div class="dep-ring" style="animation-delay:.72s"></div><div class="dep-ring" style="animation-delay:.9s"></div>
+      <div class="dep-ring" style="animation-delay:1.08s"></div><div class="dep-ring" style="animation-delay:1.26s"></div>
+      <div class="dep-ring" style="animation-delay:1.44s"></div><div class="dep-ring" style="animation-delay:1.62s"></div>
+      <div class="dep-ring" style="animation-delay:1.8s"></div><div class="dep-ring" style="animation-delay:1.98s"></div>
+      <div class="dep-ring" style="animation-delay:2.16s"></div><div class="dep-ring" style="animation-delay:2.34s"></div>
+    </div>
+    <!-- Streaks -->
+    <div class="dep-streaks dep-streaks-0" id="dep-streaks"></div>
+
+    <!-- Center -->
+    <div class="dep-center" id="dep-center">
+      <!-- filled by JS -->
+    </div>
+
+    <button class="dep-cancel" onclick="Router.go('timemachine')">✕ 취소</button>
+  </div>
+</div>
+
+<script src="../js/data.js"></script>
+<script src="../js/state.js"></script>
+<script src="../js/router.js"></script>
+<script src="../js/components.js"></script>
+<script>
+  // Streaks
+  document.getElementById('dep-streaks').innerHTML = Array.from({length:24},(_,i)=>
+    `<div class="streak" style="top:${(i*11)%100}%;animation-delay:${(i*0.08)%1.5}s;transform:translateY(${(i*17)%20}px)"></div>`
+  ).join('');
+
+  // Stars
+  document.getElementById('dep-stars').innerHTML = Array.from({length:80},(_,i)=>{
+    const size = (i*7%3)+1;
+    return `<div class="dep-star" style="left:${(i*13)%100}%;top:${(i*37)%100}%;width:${size}px;height:${size}px;animation-delay:${(i*0.11)%3}s"></div>`;
+  }).join('');
+
+  // Params
+  const params = Router.getParams();
+  const era = ERAS.find(e => e.id === params.era) || ERAS[2];
+  const country = COUNTRIES.find(c => c.code === params.country) || COUNTRIES[0];
+
+  const PHASES = [
+    { n:'01', t:'타임머신 가동', d:'좌표를 입력하는 중…' },
+    { n:'02', t:'가속',         d:'시공간을 통과합니다…' },
+    { n:'03', t:'시간의 터널',  d: era.year + '년을 향해…' },
+    { n:'04', t:'도착',         d: country.name + ', ' + era.title + '입니다' },
+  ];
+
+  let phase = 0;
+  const tunnel = document.getElementById('dep-tunnel');
+  const streaks = document.getElementById('dep-streaks');
+  const center = document.getElementById('dep-center');
+
+  function renderPhase() {
+    if (phase === 3) {
+      center.innerHTML = `
+      <div class="dep-arrival">
+        <div class="arrival-stamp-wrap">
+          <div class="arrival-stamp">
+            <div class="arrival-stamp-ring">
+              <span class="arrival-stamp-top">ARRIVED</span>
+              <span class="arrival-stamp-bottom">TIMELEAP · ${era.year}</span>
+            </div>
+            <div class="arrival-stamp-center">
+              <div class="arrival-year">${era.year}</div>
+              <div class="arrival-country">${country.flag} ${country.name}</div>
+            </div>
+          </div>
+        </div>
+        <div class="arrival-title">도착했습니다.</div>
+        <div class="arrival-sub">${era.title}, ${country.name}</div>
+      </div>`;
+      return;
+    }
+    const cur = PHASES[phase];
+    const ticks = Array.from({length:24},(_,i)=>
+      `<div class="tick" style="transform:rotate(${i*15}deg) translateY(-90px)"></div>`
+    ).join('');
+    center.innerHTML = `
+    <div class="dep-compass">
+      <div class="compass-ring compass-ring-1"></div>
+      <div class="compass-ring compass-ring-2"></div>
+      <div class="compass-ring compass-ring-3"></div>
+      <div class="compass-hub"><div class="compass-emoji">${era.emoji}</div></div>
+      <div class="compass-ticks">${ticks}</div>
+    </div>
+    <div class="dep-phase">
+      <div class="dep-phase-num">PHASE ${cur.n} / 04</div>
+      <div class="dep-phase-title">${cur.t}</div>
+      <div class="dep-phase-desc">${cur.d}</div>
+    </div>
+    <div class="dep-progress">
+      <div class="dep-progress-bar" style="width:${((phase+1)/4)*100}%"></div>
+    </div>
+    <div class="dep-coords">
+      <div><span>LAT</span>${country.lat.toFixed(2)}°N</div>
+      <div><span>LNG</span>${Math.abs(country.lng).toFixed(2)}°${country.lng<0?'W':'E'}</div>
+      <div><span>YEAR</span>${era.year}</div>
+      <div><span>ERA</span>${era.label}</div>
+    </div>`;
+  }
+
+  function setPhase(n) {
+    phase = n;
+    tunnel.className = `dep-tunnel dep-tunnel-${n}`;
+    streaks.className = `dep-streaks dep-streaks-${Math.min(n, 2)}`;
+    renderPhase();
+  }
+
+  renderPhase();
+  const t1 = setTimeout(() => setPhase(1), 1800);
+  const t2 = setTimeout(() => setPhase(2), 4500);
+  const t3 = setTimeout(() => setPhase(3), 7200);
+  const t4 = setTimeout(() => {
+    State.setPending({ era: params.era, country: params.country });
+    Router.go('result', { era: params.era, country: params.country });
+  }, 9500);
+</script>
+</body>
+</html>

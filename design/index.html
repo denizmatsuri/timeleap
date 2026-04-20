@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Timeleap — Archive of Impossible Days</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Geist:wght@400;500;600&family=Caveat:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/global.css"/>
+  <link rel="stylesheet" href="css/components.css"/>
+</head>
+<body>
+<div class="app" data-theme="paper">
+  <div class="paper-grain"></div>
+  <div id="nav-root"></div>
+
+  <div class="screen landing">
+    <!-- HERO -->
+    <section class="landing-hero">
+      <div class="hero-inner">
+        <div class="hero-left">
+          <div class="hero-stamp">
+            <span class="stamp">Since 2026 · Archive of Impossible Days</span>
+          </div>
+          <h1 class="hero-title">
+            만약 내가<br/>
+            <em>1925년</em>의<br/>
+            뉴욕에<br/>
+            있었다면?
+          </h1>
+          <p class="hero-sub">
+            얼굴 사진 한 장이면, 당신은 어느 시대·어느 나라의 하루를<br/>
+            사진 몇 장과 일기로 되돌려 받습니다.
+          </p>
+          <div class="hero-cta-row">
+            <button class="btn btn-primary btn-big" onclick="Router.go('login')">
+              ✦ 타임머신 타러 가기
+            </button>
+            <button class="btn btn-ghost btn-big" onclick="Router.go('explore')">
+              공개 갤러리 보기 →
+            </button>
+          </div>
+          <div class="hero-meta">
+            <div><strong>12,482</strong><span>발행된 여행기</span></div>
+            <div><strong>89</strong><span>시대 · 나라</span></div>
+            <div><strong>Google 로그인</strong><span>1분 안에 시작</span></div>
+          </div>
+        </div>
+
+        <div class="hero-right">
+          <div class="ticket">
+            <div class="ticket-top">
+              <div class="ticket-brand">
+                <div class="brand-mark"></div>
+                <div>
+                  <div style="font-family:var(--f-display);font-size:14px;font-weight:500">TIMELEAP</div>
+                  <div style="font-family:var(--f-mono);font-size:9px;opacity:.6;letter-spacing:.15em">BOARDING PASS</div>
+                </div>
+              </div>
+              <div class="ticket-perf"></div>
+              <div class="ticket-num">NO. 00412</div>
+            </div>
+            <div class="ticket-body">
+              <div class="ticket-row">
+                <div>
+                  <div class="ticket-label">FROM</div>
+                  <div class="ticket-big">2026<span>SEOUL</span></div>
+                </div>
+                <div class="ticket-arrow">→</div>
+                <div>
+                  <div class="ticket-label">TO</div>
+                  <div class="ticket-big">1925<span>NEW YORK</span></div>
+                </div>
+              </div>
+              <div class="ticket-photo" id="ticket-photo"></div>
+              <div class="ticket-row ticket-row-bottom">
+                <div><div class="ticket-label">PASSENGER</div><div class="ticket-mid">JIMIN · P</div></div>
+                <div><div class="ticket-label">ERA</div><div class="ticket-mid">ROARING · 20s</div></div>
+                <div><div class="ticket-label">GATE</div><div class="ticket-mid">04</div></div>
+              </div>
+            </div>
+            <div class="ticket-barcode" id="ticket-barcode"></div>
+          </div>
+          <div class="hero-stamp-float hero-stamp-1"><span class="stamp">DEPARTED</span></div>
+          <div class="hero-stamp-float hero-stamp-2"><span class="stamp" style="color:var(--sage)">ARRIVED · 1925</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="landing-how">
+      <div class="container">
+        <div class="section-label">HOW IT WORKS</div>
+        <div class="how-grid" id="how-grid"></div>
+      </div>
+    </section>
+
+    <!-- GALLERY PEEK -->
+    <section class="landing-gallery">
+      <div class="container">
+        <div class="gallery-head">
+          <div>
+            <div class="section-label">PUBLIC ARCHIVE</div>
+            <h2 class="section-title">다른 사람들의 불가능한 하루</h2>
+          </div>
+          <button class="btn btn-tiny btn-ghost" onclick="Router.go('explore')">전체 보기 →</button>
+        </div>
+        <div class="gallery-grid" id="gallery-grid"></div>
+      </div>
+    </section>
+
+    <!-- ERA STRIP -->
+    <section class="landing-eras">
+      <div class="container">
+        <div class="section-label">DESTINATIONS</div>
+        <h2 class="section-title">어느 시대로 떠나 볼까요</h2>
+        <div class="era-strip" id="era-strip"></div>
+      </div>
+    </section>
+
+    <!-- CTA FOOTER -->
+    <section class="landing-foot">
+      <div class="container foot-cta">
+        <h2>당신의 첫 여행이 기다립니다.</h2>
+        <button class="btn btn-primary btn-big" onclick="Router.go('login')">✦ 무료로 시작하기</button>
+        <div class="foot-micro">
+          <span>© 2026 Timeleap</span><span>·</span>
+          <a href="#">이용약관</a><span>·</span>
+          <a href="#">개인정보처리방침</a><span>·</span>
+          <a href="#">문의</a>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/state.js"></script>
+<script src="js/router.js"></script>
+<script src="js/components.js"></script>
+<script>
+  // Nav
+  document.getElementById('nav-root').innerHTML = renderNav('landing');
+
+  // Ticket photo
+  document.getElementById('ticket-photo').innerHTML =
+    placeholderPhoto(['#2a1d3b','#c9944a','#f4b860'], 7, 'citylights');
+
+  // Barcode
+  const bc = document.getElementById('ticket-barcode');
+  bc.innerHTML = Array.from({length:48}, (_,i) =>
+    `<span style="width:${(i*7%5)+1}px"></span>`
+  ).join('');
+
+  // How it works
+  const HOW = [
+    { n: '01', t: '얼굴을 올린다',       d: '1~3장의 셀카면 충분합니다. 한 번만 등록하면 끝.' },
+    { n: '02', t: '시대와 나라를 고른다', d: '지구본을 돌리고 타임라인을 당겨 좌표를 정합니다.' },
+    { n: '03', t: '"출발" 버튼을 누른다', d: '타임머신이 가동되고, 눈앞에서 사진과 일기가 완성됩니다.' },
+    { n: '04', t: '기록이 남는다',        d: '나의 여행 일지에 차곡차곡. 원하면 세상과 공유합니다.' },
+  ];
+  document.getElementById('how-grid').innerHTML = HOW.map(s => `
+    <div class="how-card">
+      <div class="how-num">${s.n}</div>
+      <div class="how-title">${s.t}</div>
+      <div class="how-desc">${s.d}</div>
+    </div>`).join('');
+
+  // Gallery
+  const featured = FEED.slice(0, 6);
+  document.getElementById('gallery-grid').innerHTML =
+    featured.map((f, i) => feedCard(f, i === 0)).join('');
+
+  // Era strip
+  document.getElementById('era-strip').innerHTML = ERAS.map(e => `
+    <button class="era-card" onclick="Router.go('login')">
+      <div class="era-card-emoji">${e.emoji}</div>
+      <div class="era-card-year">${e.label}</div>
+      <div class="era-card-title">${e.title}</div>
+      <div class="era-card-blurb">${e.blurb}</div>
+    </button>`).join('');
+</script>
+</body>
+</html>
