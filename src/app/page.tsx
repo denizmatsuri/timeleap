@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { signOut } from "@/actions/auth";
+import { createClient } from "@/lib/supabase/server";
 
 const ERAS = [
   {
@@ -176,7 +178,30 @@ const HOW = [
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: profile } = user
+    ? await supabase
+        .from("profiles")
+        .select("display_name, onboarding_completed_at")
+        .eq("id", user.id)
+        .maybeSingle()
+    : { data: null };
+  const isOnboardingComplete = profile?.onboarding_completed_at !== null;
+  const primaryLink = user ? "/onboarding" : "/login";
+  const primaryLabel = user
+    ? isOnboardingComplete
+      ? "탑승 정보 보기"
+      : "온보딩 계속하기"
+    : "타임머신 타기";
+  const passengerLabel =
+    profile?.display_name ??
+    user?.email?.split("@")[0] ??
+    "PASSENGER";
+
   return (
     <div className="bg-paper text-ink relative min-h-dvh overflow-x-hidden">
       <div className="paper-grain pointer-events-none absolute inset-0 z-0" />
@@ -203,11 +228,26 @@ export default function Home() {
             >
               EXPLORE
             </Link>
+            {user ? (
+              <>
+                <span className="border-ink/12 bg-paper-2/70 ml-2 hidden rounded-full border px-3 py-2 font-mono text-[10px] tracking-[.08em] opacity-55 sm:inline-flex">
+                  {passengerLabel}
+                </span>
+                <form action={signOut}>
+                  <button
+                    type="submit"
+                    className="rounded-full px-3.5 py-2 font-mono text-[11px] tracking-[.08em] uppercase opacity-55 transition-opacity hover:opacity-100"
+                  >
+                    로그아웃
+                  </button>
+                </form>
+              </>
+            ) : null}
             <Link
-              href="/login"
+              href={primaryLink}
               className="bg-ink text-paper ml-2 rounded-full px-4 py-2.5 font-sans text-[13px] font-medium transition-transform hover:-translate-y-px"
             >
-              타임머신 타기
+              {primaryLabel}
             </Link>
           </div>
         </div>
