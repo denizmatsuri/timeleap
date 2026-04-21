@@ -43,7 +43,7 @@ src/lib/
 │   └── image/
 │       └── generate-scene.ts
 └── rate-limit/
-    ├── edge.ts              # Middleware (IP)
+    ├── edge.ts              # proxy.ts 또는 별도 edge entry에서 쓰는 IP 제한
     └── action.ts            # Server Action (user)
 ```
 
@@ -237,14 +237,14 @@ const text = await withAiCache(
 ### 설계 원칙
 
 - **2계층 필수:** edge(IP) + action(user). AI 비용 경로는 반드시 둘 다 통과.
-- Edge rate limit은 `src/middleware.ts`에서 AI 경로 진입 전 적용.
+- Edge rate limit은 `src/proxy.ts` 또는 AI 전용 edge entry에서 경로 진입 전 적용.
 - Action rate limit은 Server Action 시작부에 `checkRateLimit()` 호출.
 
 ### 파일 위치
 
 ```
 src/lib/rate-limit/
-├── edge.ts    # middleware용 — IP 기반
+├── edge.ts    # proxy / edge entry용 — IP 기반
 └── action.ts  # Server Action용 — user 기반
 ```
 

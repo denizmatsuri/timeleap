@@ -19,6 +19,7 @@
    └ 공개 갤러리 샘플 보기 가능 (비로그인도 OK)
 
 2. Google 로그인
+   └ Supabase OAuth 시작 → `/auth/callback`에서 세션 쿠키 확정
 
 3. 최초 온보딩
    └ 얼굴 사진 업로드 (1~3장)
@@ -173,7 +174,7 @@
 | **ISR**                     | `/explore`, `/feed/[id]` 등 공개 페이지 | 공개 콘텐츠 캐싱 + SEO |
 | **`revalidateTag`**         | 공개 전환 / 새 일기 시                  | 선택적 캐시 무효화     |
 | **`unstable_cache`**        | AI 결과, 시대 메타데이터                | 비용/속도 최적화       |
-| **Middleware**              | 인증 가드, Rate Limit                   | 보안 / 비용 방어       |
+| **`proxy.ts` + 서버 auth check** | 세션 refresh, 인증 가드, 전단 제어        | 보안 / 비용 방어       |
 | **useOptimistic**           | 좋아요, 삭제, 수정                      | 즉각 피드백            |
 | **Dynamic OG**              | `/api/og/[feedId]`                      | 공유 카드              |
 | **next/image**              | 모든 이미지                             | 최적화                 |

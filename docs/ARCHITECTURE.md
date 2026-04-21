@@ -2,11 +2,14 @@
 
 Next.js 16 App Router 기반. 도메인별 co-location 우선, 공유 레이어는 `src/lib` / `src/components`에 모은다.
 
+> 아래 트리는 **프로젝트 전체 목표 구조**를 기준으로 한다.  
+> 현재 구현된 인증 베이스만 일부 실제 파일 기준으로 반영했다.
+
 ---
 
 ## 디렉터리 트리
 
-```
+```text
 timeleap/
 ├── src/
 │   ├── app/                          # 라우팅 루트 (Next.js App Router)
@@ -15,10 +18,18 @@ timeleap/
 │   │   ├── error.tsx                 # 전역 에러 UI
 │   │   ├── loading.tsx               # 전역 로딩 UI
 │   │   │
+│   │   ├── auth/
+│   │   │   └── callback/
+│   │   │       └── route.ts          # Google OAuth callback
+│   │   │
 │   │   ├── login/
+│   │   │   ├── _components/
+│   │   │   │   └── google-sign-in-button.tsx
 │   │   │   └── page.tsx              # Google 소셜 로그인
 │   │   │
 │   │   ├── onboarding/
+│   │   │   ├── _components/
+│   │   │   │   └── onboarding-form.tsx
 │   │   │   └── page.tsx              # 최초 온보딩 (얼굴·닉네임·성별·연령대)
 │   │   │
 │   │   ├── time-machine/
@@ -85,7 +96,10 @@ timeleap/
 │   │   ├── supabase/
 │   │   │   ├── client.ts             # 브라우저용 Supabase 클라이언트
 │   │   │   ├── server.ts             # 서버용 (Server Component / Action)
-│   │   │   └── middleware.ts         # 미들웨어용
+│   │   │   └── proxy.ts              # proxy.ts에서 쓰는 세션 갱신 유틸
+│   │   ├── auth/
+│   │   │   ├── redirect.ts           # next 파라미터 정규화
+│   │   │   └── profile-options.ts    # 성별/연령대 옵션 상수
 │   │   ├── ai/
 │   │   │   ├── pipeline.ts           # 생성 파이프라인 오케스트레이터
 │   │   │   ├── gemini.ts             # Gemini 이미지 생성
@@ -99,37 +113,37 @@ timeleap/
 │   │       └── index.ts              # Rate Limiting 유틸
 │   │
 │   ├── actions/
+│   │   ├── auth.ts                   # signInWithGoogle / signOut / completeOnboarding
 │   │   ├── diary.ts                  # createDiary / deleteDiary / togglePublic
 │   │   ├── time-machine.ts           # triggerTimeMachine (생성 파이프라인)
-│   │   ├── onboarding.ts             # saveOnboarding / updateProfile
 │   │   └── like.ts                   # toggleLike
 │   │
-│   ├── stores/                           # Zustand — 클라이언트 전역 상태
-│   │   ├── time-machine-store.ts         # 시대/국가 선택 상태, 생성 진행 단계
-│   │   └── ui-store.ts                   # 모달·토스트 등 전역 UI 상태
+│   ├── stores/                       # Zustand — 클라이언트 전역 상태
+│   │   ├── time-machine-store.ts     # 시대/국가 선택 상태, 생성 진행 단계
+│   │   └── ui-store.ts               # 모달·토스트 등 전역 UI 상태
 │   │
 │   ├── hooks/
 │   │   ├── use-optimistic-like.ts
 │   │   ├── use-face-upload.ts
-│   │   ├── use-public-feed.ts            # TanStack Query: 공개 피드 (좋아요 수 등 실시간)
-│   │   └── use-diary-likes.ts            # TanStack Query: 내 좋아요 여부
+│   │   ├── use-public-feed.ts        # TanStack Query: 공개 피드 (좋아요 수 등 실시간)
+│   │   └── use-diary-likes.ts        # TanStack Query: 내 좋아요 여부
 │   │
 │   ├── providers/
-│   │   └── query-provider.tsx            # QueryClientProvider — app/layout.tsx에서 마운트
+│   │   └── query-provider.tsx        # QueryClientProvider — app/layout.tsx에서 마운트
 │   │
 │   └── types/
-│       ├── database.types.ts           # supabase gen types — 수동 편집 금지
+│       ├── database.types.ts         # supabase gen types — 수동 편집 금지
 │       └── domain.ts                 # Era, Country, DiaryWithImages 등
 │
-├── middleware.ts                     # 인증 가드 + Rate Limit
+├── src/proxy.ts                      # 세션 refresh 및 전단 처리 진입점
 │
 ├── public/
 │   └── images/
 │
 └── docs/
     ├── ARCHITECTURE.md               # 이 파일
-    ├── feature-guide.md
-    └── tasks.md
+    ├── FEATURES.md
+    └── TASKS.md
 ```
 
 ---
@@ -170,6 +184,17 @@ timeleap/
 | `/time-machine/result/[id]` | Streaming SSR | AI 결과 순차 출력 연출 |
 | `/me/*` | SSR (auth guard) | 개인 데이터 |
 | `/api/og/[feedId]` | Route Handler | Dynamic OG (외부 콜백 패턴) |
+| `/auth/callback` | Route Handler | OAuth callback |
+
+---
+
+## 인증 / 세션 관리 메모
+
+- Next.js 16 기준으로 전단 처리 파일은 `middleware.ts` 대신 `src/proxy.ts`를 사용
+- `src/lib/supabase/proxy.ts`는 요청 초기에 세션을 갱신하는 역할
+- 실제 접근 제어는 `src/app/**/page.tsx`와 `src/actions/auth.ts` 안에서 `supabase.auth.getUser()`로 다시 검사
+- 세션의 source of truth는 Supabase Auth cookie
+- 온보딩 완료 여부는 `profiles.onboarding_completed_at`으로 판단
 
 ---
 
