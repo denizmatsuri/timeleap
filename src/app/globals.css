@@ -1,26 +1,176 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --paper:   #f1ead8;
+  --paper-2: #e8dfc6;
+  --paper-3: #ddd0ae;
+  --ink:     #1a1410;
+  --ink-2:   #3a2e20;
+  --ink-3:   #6b5842;
+  --night:   #0c0f1f;
+  --ember:   #c9944a;
+  --ember-2: #a87733;
+  --coral:   oklch(0.70 0.14 35);
+  --sage:    oklch(0.58 0.08 155);
+  --e-out:   cubic-bezier(.2,.8,.2,1);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-paper:   var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-paper-3: var(--paper-3);
+  --color-ink:     var(--ink);
+  --color-ink-2:   var(--ink-2);
+  --color-ink-3:   var(--ink-3);
+  --color-night:   var(--night);
+  --color-ember:   var(--ember);
+  --color-ember-2: var(--ember-2);
+  --color-coral:   oklch(0.70 0.14 35);
+  --color-sage:    oklch(0.58 0.08 155);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans:        var(--font-geist-sans);
+  --font-mono:        var(--font-geist-mono);
+  --font-display:     var(--font-fraunces);
+  --font-serif:       var(--font-instrument-serif);
+  --font-handwriting: var(--font-caveat);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
 }
+
+/* Paper grain texture */
+.paper-grain {
+  background-image:
+    radial-gradient(rgba(58,46,32,.06) 1px, transparent 1px),
+    radial-gradient(rgba(58,46,32,.04) 1px, transparent 1px);
+  background-size: 3px 3px, 7px 7px;
+  background-position: 0 0, 2px 3px;
+  mix-blend-mode: multiply;
+  opacity: .55;
+}
+
+/* Brand clock mark */
+.brand-mark {
+  position: relative;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  flex-shrink: 0;
+}
+.brand-mark::before,
+.brand-mark::after {
+  content: '';
+  position: absolute;
+  background: currentColor;
+  top: 50%;
+  left: 50%;
+}
+.brand-mark::before {
+  width: 10px; height: 1px;
+  transform: translate(-50%,-50%) rotate(-30deg);
+  transform-origin: left center;
+}
+.brand-mark::after {
+  width: 7px; height: 1px;
+  transform: translate(-50%,-50%) rotate(60deg);
+  transform-origin: left center;
+}
+
+/* Vintage stamp */
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10px;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  font-weight: 500;
+  border: 1.5px solid currentColor;
+  color: var(--coral);
+  transform: rotate(-4deg);
+  position: relative;
+}
+.stamp::before,
+.stamp::after {
+  content: '';
+  position: absolute;
+  border: 1.5px solid currentColor;
+  inset: 2px;
+  opacity: .4;
+}
+.stamp-sage { color: var(--sage); }
+
+/* Hero title */
+.hero-title {
+  font-variation-settings: "opsz" 144, "SOFT" 40;
+}
+.hero-title em {
+  font-family: var(--font-instrument-serif), serif;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--ember);
+  font-size: 1.08em;
+}
+
+/* Ticket notch cutouts */
+.ticket-notch {
+  position: relative;
+}
+.ticket-notch::before,
+.ticket-notch::after {
+  content: '';
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  background: var(--paper-2);
+  border-radius: 50%;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+}
+.ticket-notch::before { left: -14px; }
+.ticket-notch::after  { right: -14px; }
+
+/* Barcode pattern */
+.barcode-bg {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--ink) 0px,   var(--ink) 2px,
+    transparent 2px,  transparent 5px,
+    var(--ink) 5px,   var(--ink) 6px,
+    transparent 6px,  transparent 10px,
+    var(--ink) 10px,  var(--ink) 12px,
+    transparent 12px, transparent 14px,
+    var(--ink) 14px,  var(--ink) 16px,
+    transparent 16px, transparent 21px,
+    var(--ink) 21px,  var(--ink) 23px,
+    transparent 23px, transparent 25px,
+    var(--ink) 25px,  var(--ink) 27px,
+    transparent 27px, transparent 28px
+  );
+}
+
+/* Era placeholder photo gradients */
+.ph-roaring  { background: linear-gradient(135deg, #2a1d3b, #4a2570, #c9944a); }
+.ph-fifties  { background: linear-gradient(135deg, #c0728c, #70c4c4); }
+.ph-sixties  { background: linear-gradient(135deg, #c4406b, #70a840); }
+.ph-disco    { background: linear-gradient(135deg, #4a2a5c, #c9944a); }
+.ph-wildwest { background: linear-gradient(135deg, #3a2e20, #c9944a); }
+.ph-eighties { background: linear-gradient(135deg, #d97fa0, #70c4c4); }
+.ph-noir     { background: linear-gradient(135deg, #1a1410, #6b5842); }
+.ph-nineties { background: linear-gradient(135deg, #3a4a48, #6b5842); }
+.ph-gilded   { background: linear-gradient(135deg, #3a2e20, #c9944a, #f1ead8); }
+.ph-ticket   { background: linear-gradient(135deg, #2a1d3b, #c9944a, #f4b860); }
+
+@keyframes screen-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.screen-in { animation: screen-in .5s var(--e-out); }
