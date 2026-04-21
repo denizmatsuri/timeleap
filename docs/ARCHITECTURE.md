@@ -118,7 +118,7 @@ timeleap/
 │   │   └── query-provider.tsx            # QueryClientProvider — app/layout.tsx에서 마운트
 │   │
 │   └── types/
-│       ├── db.generated.ts           # supabase gen types — 수동 편집 금지
+│       ├── database.types.ts           # supabase gen types — 수동 편집 금지
 │       └── domain.ts                 # Era, Country, DiaryWithImages 등
 │
 ├── middleware.ts                     # 인증 가드 + Rate Limit

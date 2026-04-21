@@ -21,9 +21,9 @@
 
 - [ ] **Milestone 1: 프로젝트 환경 세팅**
   - [x] Next.js 16 + TypeScript + Tailwind 초기화
-  - [ ] Supabase 프로젝트 생성 및 환경변수 설정
-  - [ ] 폴더 구조 설계 (`src/app`, `src/components`, `src/lib`, `src/types` 등)
-  - [ ] 기본 라우팅 구조 설정 (App Router)
+  - [x] Supabase 프로젝트 생성 및 환경변수 설정 2026-04-21 10:41:20
+  - [x] 폴더 구조 설계 (`src/app`, `src/components`, `src/lib`, `src/types` 등)
+  - [x] 기본 라우팅 구조 설정 (App Router)
   - [ ] Zustand + TanStack Query 설정
 
 - [ ] **Milestone 2: 인증 / 온보딩 (A)**
