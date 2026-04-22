@@ -29,6 +29,27 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_face_images: {
+        Row: {
+          created_at: string
+          id: string
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           age_range: string | null
@@ -38,7 +59,6 @@ export type Database = {
           id: string
           onboarding_completed_at: string | null
           updated_at: string
-          username: string | null
         }
         Insert: {
           age_range?: string | null
@@ -48,7 +68,6 @@ export type Database = {
           id: string
           onboarding_completed_at?: string | null
           updated_at?: string
-          username?: string | null
         }
         Update: {
           age_range?: string | null
@@ -58,7 +77,6 @@ export type Database = {
           id?: string
           onboarding_completed_at?: string | null
           updated_at?: string
-          username?: string | null
         }
         Relationships: []
       }

@@ -19,17 +19,62 @@ type OnboardingFieldErrors = {
   ageRange?: string;
   displayName?: string;
   gender?: string;
-  username?: string;
+  photos?: string;
 };
+
+type OnboardingProfileFieldErrors = Pick<
+  OnboardingFieldErrors,
+  "ageRange" | "displayName" | "gender"
+>;
 
 export type OnboardingFormState = {
   error?: string;
   fieldErrors?: OnboardingFieldErrors;
 };
 
+export type OnboardingDraftResult = {
+  error?: string;
+  fieldErrors?: OnboardingProfileFieldErrors;
+};
+
+type OnboardingProfileInput = {
+  ageRange: string;
+  displayName: string;
+  gender: string;
+};
+
+type OnboardingProfileValues = {
+  ageRange: AgeRangeOptionValue;
+  displayName: string;
+  gender: GenderOptionValue;
+};
+
+type OnboardingProfileValidationResult =
+  | {
+      fieldErrors: OnboardingProfileFieldErrors;
+      values: null;
+    }
+  | {
+      fieldErrors: null;
+      values: OnboardingProfileValues;
+    };
+
+type ServerSupabaseClient = Awaited<ReturnType<typeof createClient>>;
+
+const MIN_FACE_IMAGE_COUNT = 1;
+const MAX_FACE_IMAGE_COUNT = 10;
+
 function readText(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
+}
+
+function readOnboardingProfile(formData: FormData): OnboardingProfileInput {
+  return {
+    ageRange: readText(formData, "ageRange"),
+    displayName: readText(formData, "displayName"),
+    gender: readText(formData, "gender"),
+  };
 }
 
 function normalizeDisplayName(value: string) {
@@ -44,26 +89,9 @@ function normalizeDisplayName(value: string) {
   return { value };
 }
 
-function normalizeUsername(value: string) {
-  const normalized = value.toLowerCase();
-
-  if (normalized.length === 0) {
-    return { value: null };
-  }
-
-  if (!/^[a-z0-9_]{3,20}$/.test(normalized)) {
-    return {
-      error: "아이디는 영문 소문자, 숫자, 밑줄만 사용할 수 있어요.",
-      value: normalized,
-    };
-  }
-
-  return { value: normalized };
-}
-
 function normalizeGender(value: string) {
   if (value.length === 0) {
-    return { value: null };
+    return { error: "성별을 선택해 주세요.", value: null };
   }
 
   const isValid = GENDER_OPTIONS.some((option) => option.value === value);
@@ -77,7 +105,7 @@ function normalizeGender(value: string) {
 
 function normalizeAgeRange(value: string) {
   if (value.length === 0) {
-    return { value: null };
+    return { error: "연령대를 선택해 주세요.", value: null };
   }
 
   const isValid = AGE_RANGE_OPTIONS.some((option) => option.value === value);
@@ -87,6 +115,63 @@ function normalizeAgeRange(value: string) {
   }
 
   return { value: value as AgeRangeOptionValue };
+}
+
+function validateOnboardingProfile(
+  input: OnboardingProfileInput,
+): OnboardingProfileValidationResult {
+  const displayName = normalizeDisplayName(input.displayName.trim());
+  const gender = normalizeGender(input.gender.trim());
+  const ageRange = normalizeAgeRange(input.ageRange.trim());
+  const fieldErrors: OnboardingProfileFieldErrors = {
+    ageRange: ageRange.error,
+    displayName: displayName.error,
+    gender: gender.error,
+  };
+
+  if (Object.values(fieldErrors).some(Boolean)) {
+    return { fieldErrors, values: null };
+  }
+
+  return {
+    fieldErrors: null,
+    values: {
+      ageRange: ageRange.value as AgeRangeOptionValue,
+      displayName: displayName.value,
+      gender: gender.value as GenderOptionValue,
+    },
+  };
+}
+
+async function saveOnboardingProfile(
+  supabase: ServerSupabaseClient,
+  userId: string,
+  profile: OnboardingProfileValues,
+) {
+  const payload: TablesInsert<"profiles"> = {
+    id: userId,
+    age_range: profile.ageRange,
+    display_name: profile.displayName,
+    gender: profile.gender,
+  };
+
+  return supabase
+    .from("profiles")
+    .upsert(payload, { onConflict: "id" });
+}
+
+async function requireAuthenticatedUser() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    redirect(createLoginRedirectPath("/onboarding"));
+  }
+
+  return { supabase, user };
 }
 
 function trimTrailingSlash(value: string) {
@@ -154,60 +239,86 @@ export async function completeOnboarding(
   _previousState: OnboardingFormState,
   formData: FormData,
 ): Promise<OnboardingFormState> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await requireAuthenticatedUser();
+  const { fieldErrors, values } = validateOnboardingProfile(
+    readOnboardingProfile(formData),
+  );
 
-  if (userError || !user) {
-    redirect(createLoginRedirectPath("/onboarding"));
-  }
-
-  const displayName = normalizeDisplayName(readText(formData, "displayName"));
-  const username = normalizeUsername(readText(formData, "username"));
-  const gender = normalizeGender(readText(formData, "gender"));
-  const ageRange = normalizeAgeRange(readText(formData, "ageRange"));
-
-  const fieldErrors: OnboardingFieldErrors = {
-    ageRange: ageRange.error,
-    displayName: displayName.error,
-    gender: gender.error,
-    username: username.error,
-  };
-
-  const hasFieldErrors = Object.values(fieldErrors).some(Boolean);
-
-  if (hasFieldErrors) {
+  if (fieldErrors) {
     return { fieldErrors };
   }
 
-  const payload: TablesInsert<"profiles"> = {
-    id: user.id,
-    age_range: ageRange.value,
-    display_name: displayName.value,
-    gender: gender.value,
-    onboarding_completed_at: new Date().toISOString(),
-    username: username.value,
-  };
-
-  const { error } = await supabase
-    .from("profiles")
-    .upsert(payload, { onConflict: "id" });
+  const { error } = await saveOnboardingProfile(supabase, user.id, values);
 
   if (error) {
-    if (error.code === "23505") {
-      return {
-        fieldErrors: {
-          username: "이미 사용 중인 아이디예요. 다른 값을 입력해 주세요.",
-        },
-      };
-    }
-
     return {
       error: "탑승 정보를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.",
     };
   }
 
+  const {
+    count: faceImageCount,
+    error: existingFaceImagesError,
+  } = await supabase
+    .from("profile_face_images")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
+
+  if (existingFaceImagesError) {
+    return {
+      error: "얼굴 사진 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    };
+  }
+
+  const ownedFaceImageCount = faceImageCount ?? 0;
+
+  if (ownedFaceImageCount < MIN_FACE_IMAGE_COUNT) {
+    return {
+      fieldErrors: {
+        photos: "얼굴 사진을 먼저 업로드해 주세요.",
+      },
+    };
+  }
+
+  if (ownedFaceImageCount > MAX_FACE_IMAGE_COUNT) {
+    return {
+      fieldErrors: {
+        photos: "사진 구성을 다시 확인해 주세요.",
+      },
+    };
+  }
+
+  const { error: completionError } = await supabase
+    .from("profiles")
+    .update({ onboarding_completed_at: new Date().toISOString() })
+    .eq("id", user.id);
+
+  if (completionError) {
+    return {
+      error: "여권 발행을 완료하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    };
+  }
+
   redirect("/");
+}
+
+export async function saveOnboardingProfileDraft(
+  input: OnboardingProfileInput,
+): Promise<OnboardingDraftResult> {
+  const { supabase, user } = await requireAuthenticatedUser();
+  const { fieldErrors, values } = validateOnboardingProfile(input);
+
+  if (fieldErrors) {
+    return { fieldErrors };
+  }
+
+  const { error } = await saveOnboardingProfile(supabase, user.id, values);
+
+  if (error) {
+    return {
+      error: "프로필 초안을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    };
+  }
+
+  return {};
 }
