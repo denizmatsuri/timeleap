@@ -1,0 +1,227 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import styles from "./departure-screen.module.css";
+
+const REDIRECT_DELAY_MS = 3000;
+const PHASE_TIMINGS = [0, 800, 1600, 2400] as const;
+
+type DepartureScreenProps = {
+  countryCode: string;
+  countryFlag: string;
+  countryName: string;
+  eraEmoji: string;
+  eraId: string;
+  eraLabel: string;
+  eraTitle: string;
+  latitude: number;
+  longitude: number;
+};
+
+const PHASES = [
+  { description: "좌표를 입력하는 중…", number: "01", title: "타임머신 가동" },
+  { description: "시공간을 통과합니다…", number: "02", title: "가속" },
+  { description: "선택한 시대로 접근 중…", number: "03", title: "시간의 터널" },
+  { description: "도착 좌표를 고정합니다…", number: "04", title: "도착 준비" },
+] as const;
+
+function formatCoordinate(
+  value: number,
+  negativeSuffix: string,
+  positiveSuffix: string,
+) {
+  return `${Math.abs(value).toFixed(2)}°${value < 0 ? negativeSuffix : positiveSuffix}`;
+}
+
+export default function DepartureScreen({
+  countryCode,
+  countryFlag,
+  countryName,
+  eraEmoji,
+  eraId,
+  eraLabel,
+  eraTitle,
+  latitude,
+  longitude,
+}: DepartureScreenProps) {
+  const router = useRouter();
+  const [phaseIndex, setPhaseIndex] = useState(0);
+
+  const targetHref = `/diary?country=${countryCode}&era=${eraId}`;
+  const currentPhase = PHASES[phaseIndex];
+  const showArrival = phaseIndex === PHASES.length - 1;
+  const stars = useMemo(() => {
+    return Array.from({ length: 80 }, (_, index) => ({
+      delay: `${(index * 0.11) % 3}s`,
+      left: `${(index * 13) % 100}%`,
+      size: `${((index * 7) % 3) + 1}px`,
+      top: `${(index * 37) % 100}%`,
+    }));
+  }, []);
+  const streaks = useMemo(() => {
+    return Array.from({ length: 24 }, (_, index) => ({
+      delay: `${(index * 0.08) % 1.5}s`,
+      top: `${(index * 11) % 100}%`,
+      translateY: `${(index * 17) % 20}px`,
+    }));
+  }, []);
+
+  useEffect(() => {
+    const timers = PHASE_TIMINGS.map((timing, index) =>
+      window.setTimeout(() => {
+        setPhaseIndex(index);
+      }, timing),
+    );
+    const redirectTimer = window.setTimeout(() => {
+      router.replace(targetHref);
+    }, REDIRECT_DELAY_MS);
+
+    return () => {
+      for (const timer of timers) {
+        window.clearTimeout(timer);
+      }
+      window.clearTimeout(redirectTimer);
+    };
+  }, [router, targetHref]);
+
+  return (
+    <div className={styles.departure}>
+      <div className={styles.stars}>
+        {stars.map((star, index) => (
+          <span
+            key={`star-${index}`}
+            className={styles.star}
+            style={{
+              animationDelay: star.delay,
+              height: star.size,
+              left: star.left,
+              top: star.top,
+              width: star.size,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className={`${styles.tunnel} ${styles[`tunnel${phaseIndex}`]}`}>
+        {Array.from({ length: 14 }, (_, index) => (
+          <span
+            key={`ring-${index}`}
+            className={styles.ring}
+            style={{ animationDelay: `${index * 0.16}s` }}
+          />
+        ))}
+      </div>
+
+      <div
+        className={`${styles.streaks} ${styles[`streaks${Math.min(phaseIndex, 2)}`]}`}
+      >
+        {streaks.map((streak, index) => (
+          <span
+            key={`streak-${index}`}
+            className={styles.streak}
+            style={{
+              animationDelay: streak.delay,
+              top: streak.top,
+              transform: `translateY(${streak.translateY})`,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className={styles.center}>
+        <div className={styles.compass}>
+          <span className={`${styles.compassRing} ${styles.compassRingOne}`} />
+          <span className={`${styles.compassRing} ${styles.compassRingTwo}`} />
+          <span
+            className={`${styles.compassRing} ${styles.compassRingThree}`}
+          />
+          <div className={styles.compassHub}>
+            <span className={styles.compassEmoji}>{eraEmoji}</span>
+          </div>
+          <div className={styles.ticks}>
+            {Array.from({ length: 24 }, (_, index) => (
+              <span
+                key={`tick-${index}`}
+                className={styles.tick}
+                style={{
+                  transform: `rotate(${index * 15}deg) translateY(-90px)`,
+                }}
+              />
+            ))}
+          </div>
+        </div>
+
+        {showArrival ? (
+          <div className={styles.arrival}>
+            <div className={styles.arrivalStampWrap}>
+              <div className={styles.arrivalStamp}>
+                <div className={styles.arrivalStampRing}>
+                  <span className={styles.arrivalStampTop}>ARRIVED</span>
+                  <span className={styles.arrivalStampBottom}>
+                    TIMELEAP · {eraLabel}
+                  </span>
+                </div>
+                <div className={styles.arrivalStampCenter}>
+                  <div className={styles.arrivalYear}>{eraLabel}</div>
+                  <div className={styles.arrivalCountry}>
+                    {countryFlag} {countryName}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className={styles.arrivalTitle}>도착했습니다.</div>
+            <div className={styles.arrivalSubtitle}>
+              {eraTitle}, {countryName}
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className={styles.phase}>
+              <div className={styles.phaseNumber}>
+                PHASE {currentPhase.number} / 04
+              </div>
+              <div className={styles.phaseTitle}>{currentPhase.title}</div>
+              <div className={styles.phaseDescription}>
+                {currentPhase.description}
+              </div>
+            </div>
+
+            <div className={styles.progress}>
+              <div
+                className={styles.progressBar}
+                style={{
+                  width: `${((phaseIndex + 1) / PHASES.length) * 100}%`,
+                }}
+              />
+            </div>
+
+            <div className={styles.coordinates}>
+              <div>
+                <span>LAT</span>
+                {formatCoordinate(latitude, "S", "N")}
+              </div>
+              <div>
+                <span>LNG</span>
+                {formatCoordinate(longitude, "W", "E")}
+              </div>
+              <div>
+                <span>YEAR</span>
+                {eraLabel}
+              </div>
+              <div>
+                <span>ERA</span>
+                {eraTitle}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      <Link href="/time-machine" className={styles.cancelButton}>
+        ✕ 취소
+      </Link>
+    </div>
+  );
+}

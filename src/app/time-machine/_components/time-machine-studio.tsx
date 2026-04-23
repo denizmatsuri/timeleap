@@ -168,12 +168,14 @@ export default function TimeMachineStudio() {
   const rotateFrameRef = useRef<number | null>(null);
 
   const activeCountry =
-    DESTINATION_COUNTRIES.find((country) => country.code === selectedCountryCode) ??
-    INITIAL_COUNTRY;
+    DESTINATION_COUNTRIES.find(
+      (country) => country.code === selectedCountryCode,
+    ) ?? INITIAL_COUNTRY;
   const activeEra =
     activeCountry.eras.find((era) => era.id === selectedEraId) ??
     activeCountry.eras[0];
   const activeEraEmoji = ERA_EMOJI_BY_ID[activeEra.id] ?? "✦";
+  const departureHref = `/time-machine/result?country=${activeCountry.code}&era=${activeEra.id}`;
 
   const clearAutoRotateResume = () => {
     if (autoRotateTimeoutRef.current !== null) {
@@ -438,7 +440,7 @@ export default function TimeMachineStudio() {
           <div className="ml-auto flex items-center gap-2">
             <Link
               href="/"
-              className="font-mono rounded-full px-3.5 py-2 text-[11px] tracking-[.08em] uppercase opacity-55 transition-opacity hover:opacity-100"
+              className="rounded-full px-3.5 py-2 font-mono text-[11px] tracking-[.08em] uppercase opacity-55 transition-opacity hover:opacity-100"
             >
               Home
             </Link>
@@ -452,7 +454,7 @@ export default function TimeMachineStudio() {
         </div>
       </nav>
 
-      <div className={cn(styles.timeMachine, "relative z-10 screen-in")}>
+      <div className={cn(styles.timeMachine, "screen-in relative z-10")}>
         <div className={styles.tmCosmos}>
           <div className={styles.tmCosmosGlow} />
         </div>
@@ -660,7 +662,9 @@ export default function TimeMachineStudio() {
                 <div className={styles.tmDestYear}>{activeEra.year}</div>
                 <div className={styles.tmDestSlash}>/</div>
                 <div className={styles.tmDestCountry}>
-                  <span className={styles.tmDestFlag}>{activeCountry.flag}</span>
+                  <span className={styles.tmDestFlag}>
+                    {activeCountry.flag}
+                  </span>
                   <span>{activeCountry.name}</span>
                 </div>
               </div>
@@ -718,9 +722,9 @@ export default function TimeMachineStudio() {
               >
                 🎲 랜덤 좌표
               </button>
-              <button type="button" className={styles.departBtn}>
+              <Link href={departureHref} className={styles.departBtn}>
                 ✦ 출발
-              </button>
+              </Link>
             </div>
 
             <div className={styles.tmMeta}>

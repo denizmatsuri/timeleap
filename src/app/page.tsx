@@ -191,10 +191,14 @@ export default async function Home() {
         .maybeSingle()
     : { data: null };
   const isOnboardingComplete = profile?.onboarding_completed_at !== null;
-  const primaryLink = user ? "/onboarding" : "/login";
+  const primaryLink = user
+    ? isOnboardingComplete
+      ? "/time-machine"
+      : "/onboarding"
+    : "/login";
   const primaryLabel = user
     ? isOnboardingComplete
-      ? "탑승 정보 보기"
+      ? "타임머신 열기"
       : "온보딩 계속하기"
     : "타임머신 타기";
   const passengerLabel =
