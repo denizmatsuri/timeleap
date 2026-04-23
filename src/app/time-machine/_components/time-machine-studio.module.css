@@ -1,0 +1,487 @@
+.timeMachine {
+  min-height: calc(100dvh - 57px);
+  position: relative;
+  overflow: hidden;
+  background: var(--paper);
+}
+
+.tmCosmos {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.tmCosmosGlow {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 34% 52%, rgba(201, 148, 74, 0.16) 0%, transparent 24%),
+    radial-gradient(circle at 68% 40%, rgba(201, 148, 74, 0.08) 0%, transparent 34%);
+  transition: background 0.6s;
+}
+
+.tmLayout {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 30px 32px 60px;
+  display: grid;
+  grid-template-columns: 1fr 440px;
+  gap: 40px;
+  position: relative;
+  z-index: 1;
+  align-items: start;
+}
+
+.tmGlobeWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 20px;
+}
+
+.tmGlobeLabel {
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.tmLabelSmall {
+  display: block;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+.tmLabelBig {
+  display: block;
+  font-family: var(--font-fraunces), serif;
+  font-weight: 400;
+  font-size: 24px;
+  letter-spacing: -0.01em;
+}
+
+.tmGlobeStage {
+  user-select: none;
+  touch-action: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: min(540px, 100%);
+  min-height: 500px;
+  padding: 20px;
+  position: relative;
+  cursor: grab;
+}
+
+.tmGlobeStageDragging {
+  cursor: grabbing;
+}
+
+.globeSvg {
+  width: min(460px, 100%);
+  height: auto;
+  overflow: visible;
+}
+
+.globeMarkerGroup {
+  cursor: pointer;
+}
+
+.globeMarkerCore {
+  transition: transform 0.2s ease;
+}
+
+.globeMarkerGroup:hover .globeMarkerCore {
+  transform: scale(1.08);
+}
+
+.globeCode {
+  fill: #fdf6e3;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.11em;
+}
+
+.tmGlobeHint {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  opacity: 0.5;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.countryPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 20px;
+  max-width: 480px;
+}
+
+.countryPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  border: 1px solid rgba(26, 20, 16, 0.16);
+  background: transparent;
+  transition: all 0.2s;
+}
+
+.countryPill:hover {
+  background: rgba(26, 20, 16, 0.08);
+}
+
+.countryPillActive {
+  background: var(--ember);
+  color: var(--night);
+  border-color: var(--ember);
+}
+
+.tmSide {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  background: var(--paper-2);
+  border: 1px solid rgba(26, 20, 16, 0.15);
+  border-radius: 12px;
+  padding: 28px;
+  position: sticky;
+  top: 90px;
+}
+
+.tmDestination {
+  padding-bottom: 22px;
+  border-bottom: 1px solid rgba(26, 20, 16, 0.15);
+}
+
+.tmDestLabel {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0.55;
+  margin-bottom: 10px;
+}
+
+.tmDestBig {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 10px;
+  font-family: var(--font-fraunces), serif;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+.tmDestYear {
+  font-size: 44px;
+  color: var(--ember-2);
+}
+
+.tmDestSlash {
+  font-size: 32px;
+  opacity: 0.4;
+}
+
+.tmDestCountry {
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tmDestFlag {
+  font-size: 26px;
+}
+
+.tmDestTitle {
+  font-family: var(--font-instrument-serif), serif;
+  font-style: italic;
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.tmDestEmoji {
+  font-style: normal;
+  margin-right: 4px;
+}
+
+.tmDestBlurb {
+  font-size: 13px;
+  opacity: 0.7;
+  line-height: 1.5;
+}
+
+.tmTimeline {
+  display: flex;
+  flex-direction: column;
+}
+
+.timelineRailWrap {
+  padding: 24px 0;
+}
+
+.timelineRail {
+  position: relative;
+  display: flex;
+  height: 60px;
+  margin: 0 10px;
+}
+
+.timelineRail::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 20px;
+  height: 1px;
+  background: rgba(26, 20, 16, 0.25);
+}
+
+.railNode {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+
+.railNode:hover {
+  opacity: 0.9;
+}
+
+.railNodeActive {
+  opacity: 1;
+}
+
+.railNodeActive::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 2px;
+  height: 32px;
+  background: var(--ember);
+  transform: translateX(-50%);
+}
+
+.railDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+  margin-top: 15px;
+  transition: transform 0.2s;
+}
+
+.railNodeActive .railDot {
+  background: var(--ember);
+  transform: scale(1.5);
+  box-shadow: 0 0 0 4px rgba(201, 148, 74, 0.2);
+}
+
+.railYear {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  opacity: 0.8;
+  margin-top: 6px;
+}
+
+.railEmoji {
+  font-size: 12px;
+}
+
+.eraDetailCard {
+  background: var(--paper-3);
+  border-radius: 8px;
+  padding: 18px;
+  margin-top: 8px;
+}
+
+.eraDetailHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.eraDetailYear {
+  font-family: var(--font-fraunces), serif;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--ember);
+}
+
+.eraDetailName {
+  font-family: var(--font-fraunces), serif;
+  font-style: italic;
+  font-size: 16px;
+}
+
+.eraDetailBody {
+  font-size: 13px;
+  line-height: 1.5;
+  opacity: 0.78;
+  margin-bottom: 14px;
+}
+
+.eraDetailTags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(26, 20, 16, 0.16);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tmActions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.btnGhost,
+.departBtn {
+  min-height: 44px;
+  border-radius: 999px;
+  padding: 0 18px;
+  font-size: 14px;
+  transition: transform 0.2s;
+}
+
+.btnGhost {
+  flex-shrink: 0;
+  border: 1px solid rgba(26, 20, 16, 0.16);
+  background: transparent;
+}
+
+.departBtn {
+  flex: 1;
+  background: var(--ember);
+  color: var(--night);
+  border: none;
+  box-shadow:
+    0 0 30px -5px rgba(201, 148, 74, 0.45),
+    0 4px 0 rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.departBtn::before {
+  content: "";
+  position: absolute;
+  inset: -100% 0 auto 0;
+  height: 300%;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(255, 255, 255, 0.25),
+    transparent
+  );
+  animation: sheen 3s infinite;
+}
+
+@keyframes sheen {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+.btnGhost:hover,
+.departBtn:hover {
+  transform: translateY(-1px);
+}
+
+.tmMeta {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  opacity: 0.55;
+  padding-top: 10px;
+  border-top: 1px solid rgba(26, 20, 16, 0.12);
+}
+
+.tmMeta strong {
+  color: var(--ember);
+  font-weight: 500;
+}
+
+@media (max-width: 900px) {
+  .tmLayout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .tmSide {
+    position: relative;
+    top: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .tmLayout {
+    padding: 24px 16px 40px;
+  }
+
+  .tmGlobeStage {
+    min-height: 420px;
+    padding-inline: 0;
+  }
+
+  .tmActions {
+    flex-direction: column;
+  }
+
+  .btnGhost,
+  .departBtn {
+    width: 100%;
+  }
+
+  .tmMeta {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .tmDestBig {
+    gap: 8px;
+  }
+
+  .tmDestYear {
+    font-size: 38px;
+  }
+
+  .tmDestCountry {
+    font-size: 18px;
+  }
+}
