@@ -1,21 +1,17 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { signOut } from "@/actions/auth";
 import ResultFooter from "@/app/diary/_components/result-footer";
-import {
-  type DestinationCountry,
-  type DestinationEra,
-  type EraTone,
-} from "@/app/time-machine/_data/time-machine-destinations";
-import {
-  readQueryValue,
-  resolveDestinationSelection,
-} from "@/lib/time-machine/destination";
+import { createDiaryHeroImageUrl, getDiaryById } from "@/lib/diaries/server";
+import { resolveDestinationByDiary } from "@/lib/time-machine/destination";
+import { type EraTone } from "@/app/time-machine/_data/time-machine-destinations";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "Diary — Timeleap",
-  description: "Timeleap 타임머신 도착 이후 보여주는 결과 여행기 페이지",
+  description: "AI가 생성하고 저장한 Timeleap 여행기 상세 페이지",
 };
 
 const HERO_PHOTO_BY_TONE: Record<EraTone, string> = {
@@ -36,20 +32,41 @@ const HERO_PHOTO_BY_TONE: Record<EraTone, string> = {
   sepia: "ph-gilded",
 };
 
-type DiaryPageProps = {
-  searchParams: Promise<{
-    country?: string | string[];
-    era?: string | string[];
+type DiaryDetailPageProps = {
+  params: Promise<{
+    id: string;
   }>;
 };
+
+function formatEntryDate(createdAt: string) {
+  const date = new Date(createdAt);
+
+  if (Number.isNaN(date.getTime())) {
+    return createdAt.slice(0, 10).replaceAll("-", ".");
+  }
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  })
+    .format(date)
+    .replace(/\s/g, "");
+}
 
 function getPassengerName({
   displayName,
   email,
+  isOwner,
 }: {
   displayName?: string | null;
   email?: string | null;
+  isOwner: boolean;
 }) {
+  if (!isOwner) {
+    return "Timeleap Traveler";
+  }
+
   const trimmedName = displayName?.trim();
 
   if (trimmedName) {
@@ -57,6 +74,7 @@ function getPassengerName({
   }
 
   const [localPart] = email?.split("@") ?? [];
+
   return localPart || "나";
 }
 
@@ -64,69 +82,81 @@ function getPassengerInitial(name: string) {
   return name.slice(0, 1).toUpperCase();
 }
 
-function createEntryDate(era: DestinationEra) {
-  const seed = era.id
-    .split("")
-    .reduce((sum, character) => sum + character.charCodeAt(0), 0);
-  const month = String((seed % 12) + 1).padStart(2, "0");
-  const day = String((seed % 28) + 1).padStart(2, "0");
-
-  return `${era.year}.${month}.${day}`;
-}
-
-function createDiaryTitle(era: DestinationEra) {
-  return `${era.sceneCards[0].title}`;
-}
-
-function buildDiaryEntry({
-  country,
-  era,
-  passengerName,
+function buildFallbackBody({
+  countryName,
+  eraTitle,
+  eraYear,
+  sceneNote,
+  sceneTitle,
 }: {
-  country: DestinationCountry;
-  era: DestinationEra;
-  passengerName: string;
+  countryName: string;
+  eraTitle: string;
+  eraYear: string;
+  sceneNote: string;
+  sceneTitle: string;
 }) {
-  const arrivalScene = era.sceneCards[0];
-
-  return `${era.year}년 ${era.city}의 ${arrivalScene.title} 앞에 서 있자 ${arrivalScene.note}가 먼저 피부에 닿았다. ${passengerName}는 ${era.wardrobe} 차림으로 그 풍경 한가운데에 자연스럽게 스며들었고, ${country.name}의 ${era.title}은 ${era.texture}와 ${era.soundtrack}의 결까지 포함한 채 오늘 하루를 아주 짧고 또렷한 기억으로 남겨 두었다.`;
+  return `${eraYear}년 ${sceneTitle}의 공기 속에서 ${sceneNote}가 먼저 다가왔다. ${countryName}의 ${eraTitle}은 아주 짧은 순간이었지만 오래 남을 하루처럼 기록되었다.`;
 }
 
-export default async function DiaryPage({ searchParams }: DiaryPageProps) {
+export default async function DiaryDetailPage({
+  params,
+}: DiaryDetailPageProps) {
+  const { id } = await params;
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const { data: profile, error: profileError } = user
+  const diary = await getDiaryById(supabase, id);
+
+  if (!diary) {
+    notFound();
+  }
+
+  const isOwner = diary.user_id === user?.id;
+
+  if (!diary.is_public && !isOwner) {
+    notFound();
+  }
+
+  const { country, era } = resolveDestinationByDiary({
+    countryCode: diary.country_code,
+    eraId: diary.era_id,
+  });
+  const { data: ownerProfile, error: ownerProfileError } = isOwner
     ? await supabase
         .from("profiles")
         .select("display_name")
-        .eq("id", user.id)
+        .eq("id", diary.user_id)
         .maybeSingle()
     : { data: null, error: null };
 
-  if (profileError) {
-    throw new Error(`Failed to load diary profile: ${profileError.message}`);
+  if (ownerProfileError) {
+    throw new Error(
+      `Diary 프로필을 읽지 못했습니다. ${ownerProfileError.message}`,
+    );
   }
 
-  const resolvedSearchParams = await searchParams;
-  const { country, era } = resolveDestinationSelection({
-    countryCode: readQueryValue(resolvedSearchParams.country),
-    eraId: readQueryValue(resolvedSearchParams.era),
-  });
   const passengerName = getPassengerName({
-    displayName: profile?.display_name,
+    displayName: ownerProfile?.display_name,
     email: user?.email,
+    isOwner,
   });
   const passengerInitial = getPassengerInitial(passengerName);
-  const entryDate = createEntryDate(era);
-  const title = createDiaryTitle(era);
-  const diaryEntry = buildDiaryEntry({
-    country,
-    era,
-    passengerName,
-  });
+  const entryDate = formatEntryDate(diary.created_at);
+  const title = diary.title?.trim() || era.sceneCards[0].title;
+  const diaryEntry =
+    diary.body?.trim() ||
+    buildFallbackBody({
+      countryName: country.name,
+      eraTitle: era.title,
+      eraYear: era.year,
+      sceneNote: era.sceneCards[0].note,
+      sceneTitle: era.sceneCards[0].title,
+    });
   const heroPhotoClass = HERO_PHOTO_BY_TONE[era.tone];
+  const heroImageUrl = diary.hero_image_path
+    ? await createDiaryHeroImageUrl(supabase, diary.hero_image_path)
+    : null;
   const tags = [
     `#${country.name}`,
     `#${era.year}`,
@@ -215,7 +245,18 @@ export default async function DiaryPage({ searchParams }: DiaryPageProps) {
           <div className="my-10 flex justify-center">
             <figure className="bg-paper relative w-full max-w-[430px] rotate-[-1.2deg] p-3 pb-12 shadow-[0_1px_0_rgba(0,0,0,.05),0_18px_40px_-18px_rgba(0,0,0,.28)]">
               <div className="bg-paper-3 relative aspect-[4/5] overflow-hidden">
-                <div className={`${heroPhotoClass} absolute inset-0`} />
+                {heroImageUrl ? (
+                  <Image
+                    src={heroImageUrl}
+                    alt={`${country.name} ${era.title} 대표 사진`}
+                    fill
+                    sizes="(min-width: 1024px) 430px, 100vw"
+                    className="object-cover"
+                    unoptimized
+                  />
+                ) : (
+                  <div className={`${heroPhotoClass} absolute inset-0`} />
+                )}
                 <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(0,0,0,0.24))]" />
                 <div className="absolute bottom-3 left-3 rounded-sm bg-black/30 px-2 py-1 font-mono text-[9px] tracking-[0.12em] text-white/75 uppercase">
                   Generated Hero Frame

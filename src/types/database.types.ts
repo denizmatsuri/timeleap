@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      diaries: {
+        Row: {
+          body: string | null
+          country_code: string
+          created_at: string
+          era_id: string
+          hero_image_path: string | null
+          id: string
+          is_public: boolean
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          country_code: string
+          created_at?: string
+          era_id: string
+          hero_image_path?: string | null
+          id?: string
+          is_public?: boolean
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          country_code?: string
+          created_at?: string
+          era_id?: string
+          hero_image_path?: string | null
+          id?: string
+          is_public?: boolean
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       instruments: {
         Row: {
           id: number

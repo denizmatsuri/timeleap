@@ -1,18 +1,15 @@
 import type { Metadata } from "next";
 import DepartureScreen from "@/app/time-machine/result/_components/departure-screen";
+import type { DestinationCountry } from "@/app/time-machine/_data/time-machine-destinations";
 import {
-  DESTINATION_COUNTRIES,
-  type DestinationCountry,
-} from "@/app/time-machine/_data/time-machine-destinations";
+  readQueryValue,
+  resolveDestinationSelection,
+} from "@/lib/time-machine/destination";
 
 export const metadata: Metadata = {
   title: "Departure — Timeleap",
   description: "선택한 좌표로 이동하는 Timeleap 중간 로딩 화면",
 };
-
-const DEFAULT_COUNTRY =
-  DESTINATION_COUNTRIES.find((country) => country.code === "US") ??
-  DESTINATION_COUNTRIES[0];
 
 const COUNTRY_COORDINATES: Record<
   DestinationCountry["code"],
@@ -54,68 +51,11 @@ type ResultPageProps = {
   }>;
 };
 
-function readQueryValue(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
-}
-
-function isDestinationCountryCode(
-  value: string | undefined,
-): value is DestinationCountry["code"] {
-  if (!value) {
-    return false;
-  }
-
-  return DESTINATION_COUNTRIES.some((country) => country.code === value);
-}
-
-function resolveDestination({
-  countryCode,
-  eraId,
-}: {
-  countryCode?: string;
-  eraId?: string;
-}) {
-  if (eraId) {
-    const matchedCountry = DESTINATION_COUNTRIES.find((country) =>
-      country.eras.some((era) => era.id === eraId),
-    );
-
-    if (matchedCountry) {
-      const matchedEra = matchedCountry.eras.find((era) => era.id === eraId);
-
-      if (matchedEra) {
-        return {
-          country: matchedCountry,
-          era: matchedEra,
-        };
-      }
-    }
-  }
-
-  if (isDestinationCountryCode(countryCode)) {
-    const matchedCountry = DESTINATION_COUNTRIES.find(
-      (country) => country.code === countryCode,
-    );
-
-    if (matchedCountry) {
-      return {
-        country: matchedCountry,
-        era: matchedCountry.eras[0],
-      };
-    }
-  }
-
-  return {
-    country: DEFAULT_COUNTRY,
-    era: DEFAULT_COUNTRY.eras[0],
-  };
-}
-
 export default async function TimeMachineResultPage({
   searchParams,
 }: ResultPageProps) {
   const resolvedSearchParams = await searchParams;
-  const { country, era } = resolveDestination({
+  const { country, era } = resolveDestinationSelection({
     countryCode: readQueryValue(resolvedSearchParams.country),
     eraId: readQueryValue(resolvedSearchParams.era),
   });

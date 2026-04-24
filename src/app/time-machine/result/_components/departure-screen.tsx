@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { generateDiaryFromSelection } from "@/actions/time-machine";
 import styles from "./departure-screen.module.css";
 
 const REDIRECT_DELAY_MS = 3000;
@@ -48,8 +49,10 @@ export default function DepartureScreen({
 }: DepartureScreenProps) {
   const router = useRouter();
   const [phaseIndex, setPhaseIndex] = useState(0);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [isPending, startTransition] = useTransition();
 
-  const targetHref = `/diary?country=${countryCode}&era=${eraId}`;
   const currentPhase = PHASES[phaseIndex];
   const showArrival = phaseIndex === PHASES.length - 1;
   const stars = useMemo(() => {
@@ -69,22 +72,59 @@ export default function DepartureScreen({
   }, []);
 
   useEffect(() => {
-    const timers = PHASE_TIMINGS.map((timing, index) =>
+    let cancelled = false;
+    const timers: number[] = PHASE_TIMINGS.map((timing, index) =>
       window.setTimeout(() => {
         setPhaseIndex(index);
       }, timing),
     );
-    const redirectTimer = window.setTimeout(() => {
-      router.replace(targetHref);
-    }, REDIRECT_DELAY_MS);
+    const minimumDelay = new Promise<void>((resolve) => {
+      const delayTimer = window.setTimeout(() => {
+        resolve();
+      }, REDIRECT_DELAY_MS);
+
+      timers.push(delayTimer);
+    });
+
+    startTransition(() => {
+      void Promise.all([
+        generateDiaryFromSelection({
+          countryCode,
+          eraId,
+        }),
+        minimumDelay,
+      ])
+        .then(([result]) => {
+          if (cancelled) {
+            return;
+          }
+
+          router.replace(`/diary/${result.diaryId}`);
+        })
+        .catch((error: unknown) => {
+          if (cancelled) {
+            return;
+          }
+
+          if (error instanceof Error && error.message.trim()) {
+            setGenerationError(error.message);
+            return;
+          }
+
+          setGenerationError(
+            "여행기를 생성하지 못했습니다. 다시 시도해 주세요.",
+          );
+        });
+    });
 
     return () => {
+      cancelled = true;
+
       for (const timer of timers) {
         window.clearTimeout(timer);
       }
-      window.clearTimeout(redirectTimer);
     };
-  }, [router, targetHref]);
+  }, [countryCode, eraId, retryCount, router]);
 
   return (
     <div className={styles.departure}>
@@ -153,7 +193,28 @@ export default function DepartureScreen({
           </div>
         </div>
 
-        {showArrival ? (
+        {generationError ? (
+          <div className={styles.errorCard}>
+            <div className={styles.errorTitle}>기록이 흔들렸습니다.</div>
+            <div className={styles.errorDescription}>{generationError}</div>
+            <div className={styles.errorActions}>
+              <button
+                type="button"
+                className={styles.retryButton}
+                onClick={() => {
+                  setGenerationError(null);
+                  setPhaseIndex(0);
+                  setRetryCount((currentValue) => currentValue + 1);
+                }}
+              >
+                다시 생성하기
+              </button>
+              <Link href="/time-machine" className={styles.secondaryButton}>
+                좌표 다시 고르기
+              </Link>
+            </div>
+          </div>
+        ) : showArrival ? (
           <div className={styles.arrival}>
             <div className={styles.arrivalStampWrap}>
               <div className={styles.arrivalStamp}>
@@ -174,6 +235,11 @@ export default function DepartureScreen({
             <div className={styles.arrivalTitle}>도착했습니다.</div>
             <div className={styles.arrivalSubtitle}>
               {eraTitle}, {countryName}
+            </div>
+            <div className={styles.statusNote}>
+              {isPending
+                ? "Nano Banana가 대표 사진과 여행기를 정리하는 중…"
+                : "결과 페이지로 이동하는 중…"}
             </div>
           </div>
         ) : (
@@ -214,6 +280,11 @@ export default function DepartureScreen({
                 <span>ERA</span>
                 {eraTitle}
               </div>
+            </div>
+            <div className={styles.statusNote}>
+              {isPending
+                ? "AI가 이 시대의 대표 장면과 짧은 일기를 생성하는 중…"
+                : "출발 신호를 준비하는 중…"}
             </div>
           </>
         )}

@@ -732,7 +732,7 @@ export default function TimeMachineStudio() {
                 예상 소요시간 · <strong>30–60초</strong>
               </div>
               <div>
-                결과물 · <strong>사진 3–5장 + 일기</strong>
+                결과물 · <strong>사진 + 일기</strong>
               </div>
             </div>
           </aside>
