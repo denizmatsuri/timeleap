@@ -359,12 +359,16 @@ export async function generateDiaryFromSelection({
       userId: user.id,
     });
 
-    await markGenerationJobSucceeded({
-      diaryId: savedDiary.id,
-      generationRequestId,
-      supabase,
-      userId: user.id,
-    });
+    try {
+      await markGenerationJobSucceeded({
+        diaryId: savedDiary.id,
+        generationRequestId,
+        supabase,
+        userId: user.id,
+      });
+    } catch {
+      // Diary 저장은 이미 완료됐으므로 작업 상태 기록 실패가 사용자 결과를 뒤집지 않는다.
+    }
 
     return {
       diaryId: savedDiary.id,
