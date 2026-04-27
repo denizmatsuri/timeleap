@@ -190,7 +190,7 @@ export default async function Home() {
         .eq("id", user.id)
         .maybeSingle()
     : { data: null };
-  const isOnboardingComplete = profile?.onboarding_completed_at !== null;
+  const isOnboardingComplete = Boolean(profile?.onboarding_completed_at);
   const primaryLink = user
     ? isOnboardingComplete
       ? "/time-machine"
@@ -202,9 +202,7 @@ export default async function Home() {
       : "온보딩 계속하기"
     : "타임머신 타기";
   const passengerLabel =
-    profile?.display_name ??
-    user?.email?.split("@")[0] ??
-    "PASSENGER";
+    profile?.display_name ?? user?.email?.split("@")[0] ?? "PASSENGER";
 
   return (
     <div className="bg-paper text-ink relative min-h-dvh overflow-x-hidden">
@@ -234,6 +232,14 @@ export default async function Home() {
             </Link>
             {user ? (
               <>
+                {isOnboardingComplete ? (
+                  <Link
+                    href="/me/diaries"
+                    className="rounded-full px-3.5 py-2 font-mono text-[11px] tracking-[.08em] uppercase opacity-70 transition-opacity hover:opacity-100"
+                  >
+                    내 일기장
+                  </Link>
+                ) : null}
                 <span className="border-ink/12 bg-paper-2/70 ml-2 hidden rounded-full border px-3 py-2 font-mono text-[10px] tracking-[.08em] opacity-55 sm:inline-flex">
                   {passengerLabel}
                 </span>

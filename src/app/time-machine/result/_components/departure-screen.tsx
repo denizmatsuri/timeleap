@@ -99,7 +99,7 @@ export default function DepartureScreen({
             return;
           }
 
-          router.replace(`/diary/${result.diaryId}`);
+          router.replace(`/me/diaries/${result.diaryId}`);
         })
         .catch((error: unknown) => {
           if (cancelled) {

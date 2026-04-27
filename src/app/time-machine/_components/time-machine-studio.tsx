@@ -90,6 +90,10 @@ type GlobeMarker = {
   scale: number;
 };
 
+export type TimeMachineStudioProps = {
+  showMyDiariesLink: boolean;
+};
+
 function parsePath(pathDefinition: string): Array<[number, number]> {
   const numbers = pathDefinition.match(/-?\d+(?:\.\d+)?/g) ?? [];
   const points: Array<[number, number]> = [];
@@ -147,7 +151,9 @@ function cn(...classNames: Array<string | false | null | undefined>) {
   return classNames.filter(Boolean).join(" ");
 }
 
-export default function TimeMachineStudio() {
+export default function TimeMachineStudio({
+  showMyDiariesLink,
+}: TimeMachineStudioProps) {
   const [selectedCountryCode, setSelectedCountryCode] = useState<
     DestinationCountry["code"]
   >(INITIAL_COUNTRY.code);
@@ -444,6 +450,14 @@ export default function TimeMachineStudio() {
             >
               Home
             </Link>
+            {showMyDiariesLink ? (
+              <Link
+                href="/me/diaries"
+                className="rounded-full px-3.5 py-2 font-mono text-[11px] tracking-[.08em] uppercase opacity-70 transition-opacity hover:opacity-100"
+              >
+                내 일기장
+              </Link>
+            ) : null}
             <Link
               href="/onboarding"
               className="bg-ink text-paper rounded-full px-4 py-2.5 font-sans text-[13px] font-medium transition-transform hover:-translate-y-px"

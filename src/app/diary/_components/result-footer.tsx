@@ -1,22 +1,66 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { setDiaryVisibility } from "@/actions/diary";
 
 type ResultFooterProps = {
+  diaryId?: string;
+  initialIsPublic?: boolean;
+  isOwner?: boolean;
+  myDiaryHref?: string;
   tags: readonly string[];
 };
 
-export default function ResultFooter({ tags }: ResultFooterProps) {
-  const [isPublic, setIsPublic] = useState(false);
+const SHARE_RESET_DELAY_MS = 1800;
+
+export default function ResultFooter({
+  diaryId,
+  initialIsPublic = false,
+  isOwner = true,
+  myDiaryHref,
+  tags,
+}: ResultFooterProps) {
+  const router = useRouter();
+  const [isPublic, setIsPublic] = useState(initialIsPublic);
   const [liked, setLiked] = useState(false);
   const [shareLabel, setShareLabel] = useState("↑ 공유");
+  const [visibilityError, setVisibilityError] = useState<string | null>(null);
+  const [isVisibilityPending, startVisibilityTransition] = useTransition();
 
+  const canToggleVisibility = isOwner || !diaryId;
   const visibilityDescription = isPublic
     ? "공개 갤러리에 노출됩니다."
     : "나만 볼 수 있습니다. 언제든 변경 가능해요.";
+  const visibilityActionLabel = isVisibilityPending ? "저장 중" : "공개";
   const likeLabel = liked ? "♥ 좋아요 표시됨" : "♡ 좋아요";
-  const shareResetDelay = useMemo(() => 1800, []);
+
+  function handleToggleVisibility() {
+    const nextIsPublic = !isPublic;
+
+    if (!diaryId) {
+      setIsPublic(nextIsPublic);
+      return;
+    }
+
+    setVisibilityError(null);
+    startVisibilityTransition(() => {
+      void setDiaryVisibility(diaryId, nextIsPublic)
+        .then((result) => {
+          setIsPublic(result.isPublic);
+          router.refresh();
+        })
+        .catch((error: unknown) => {
+          const message =
+            error instanceof Error && error.message.trim()
+              ? error.message
+              : "공개 상태를 저장하지 못했습니다.";
+
+          setVisibilityError(message);
+        });
+    });
+  }
 
   async function handleShare() {
     const shareUrl = window.location.href;
@@ -39,7 +83,7 @@ export default function ResultFooter({ tags }: ResultFooterProps) {
 
     window.setTimeout(() => {
       setShareLabel("↑ 공유");
-    }, shareResetDelay);
+    }, SHARE_RESET_DELAY_MS);
   }
 
   return (
@@ -55,47 +99,54 @@ export default function ResultFooter({ tags }: ResultFooterProps) {
         ))}
       </div>
 
-      <div className="border-ink/12 bg-ink/4 mb-6 flex flex-col gap-5 rounded-[18px] border px-5 py-5 md:flex-row md:items-center md:justify-between">
-        <div>
-          <div className="font-display text-[20px] tracking-[-0.02em]">
-            이 여행기를 공개할까요?
+      {canToggleVisibility ? (
+        <div className="border-ink/12 bg-ink/4 mb-6 flex flex-col gap-5 rounded-[18px] border px-5 py-5 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="font-display text-[20px] tracking-[-0.02em]">
+              이 여행기를 공개할까요?
+            </div>
+            <div className="mt-1 text-[13px] leading-[1.7] opacity-70">
+              {visibilityDescription}
+            </div>
+            {visibilityError ? (
+              <div className="text-coral mt-2 text-[13px] leading-[1.6]">
+                {visibilityError}
+              </div>
+            ) : null}
           </div>
-          <div className="mt-1 text-[13px] leading-[1.7] opacity-70">
-            {visibilityDescription}
-          </div>
-        </div>
 
-        <button
-          type="button"
-          aria-pressed={isPublic}
-          onClick={() => {
-            setIsPublic((currentValue) => !currentValue);
-          }}
-          className={`relative flex h-10 w-[130px] items-center rounded-full border px-[3px] transition-colors ${
-            isPublic ? "border-ink/20 bg-ink/12" : "border-ink/18 bg-ink/8"
-          }`}
-        >
-          <span
-            className={`bg-ember text-night absolute top-[3px] h-8 w-[60px] rounded-full transition-[left] duration-300 ${
-              isPublic ? "left-[calc(100%-63px)]" : "left-[3px]"
-            }`}
-          />
-          <span
-            className={`z-10 flex-1 text-center font-mono text-[10px] tracking-[0.1em] uppercase ${
-              isPublic ? "opacity-50" : "opacity-100"
+          <button
+            type="button"
+            aria-label={`여행기 ${visibilityActionLabel} 상태 전환`}
+            aria-pressed={isPublic}
+            disabled={isVisibilityPending}
+            onClick={handleToggleVisibility}
+            className={`relative flex h-10 w-[130px] items-center rounded-full border px-[3px] transition-colors disabled:cursor-wait disabled:opacity-60 ${
+              isPublic ? "border-ink/20 bg-ink/12" : "border-ink/18 bg-ink/8"
             }`}
           >
-            비공개
-          </span>
-          <span
-            className={`z-10 flex-1 text-center font-mono text-[10px] tracking-[0.1em] uppercase ${
-              isPublic ? "opacity-100" : "opacity-50"
-            }`}
-          >
-            공개
-          </span>
-        </button>
-      </div>
+            <span
+              className={`bg-ember text-night absolute top-[3px] h-8 w-[60px] rounded-full transition-[left] duration-300 ${
+                isPublic ? "left-[calc(100%-63px)]" : "left-[3px]"
+              }`}
+            />
+            <span
+              className={`z-10 flex-1 text-center font-mono text-[10px] tracking-[0.1em] uppercase ${
+                isPublic ? "opacity-50" : "opacity-100"
+              }`}
+            >
+              비공개
+            </span>
+            <span
+              className={`z-10 flex-1 text-center font-mono text-[10px] tracking-[0.1em] uppercase ${
+                isPublic ? "opacity-100" : "opacity-50"
+              }`}
+            >
+              공개
+            </span>
+          </button>
+        </div>
+      ) : null}
 
       <div className="mb-8 flex flex-wrap gap-2">
         <button
@@ -123,6 +174,14 @@ export default function ResultFooter({ tags }: ResultFooterProps) {
       </div>
 
       <div className="border-ink/12 flex flex-wrap justify-center gap-3 border-t pt-6">
+        {myDiaryHref ? (
+          <Link
+            href={myDiaryHref}
+            className="bg-ink text-paper font-display rounded-full px-7 py-4 text-[15px] tracking-[-0.01em] transition-transform hover:-translate-y-px"
+          >
+            내 일기 관리
+          </Link>
+        ) : null}
         <Link
           href="/time-machine"
           className="bg-ink/8 hover:bg-ink/12 font-display rounded-full px-7 py-4 text-[15px] tracking-[-0.01em] transition-colors"

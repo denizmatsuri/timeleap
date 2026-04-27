@@ -1,17 +1,21 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { signOut } from "@/actions/auth";
-import ResultFooter from "@/app/diary/_components/result-footer";
-import { createDiaryHeroImageUrl, getDiaryById } from "@/lib/diaries/server";
+import { deleteDiary, updateDiaryVisibility } from "@/actions/diary";
+import { createLoginRedirectPath } from "@/lib/auth/redirect";
+import {
+  createDiaryHeroImageUrlOrNull,
+  getOwnedDiaryById,
+} from "@/lib/diaries/server";
+import { createClient } from "@/lib/supabase/server";
 import { resolveDestinationByDiary } from "@/lib/time-machine/destination";
 import { type EraTone } from "@/app/time-machine/_data/time-machine-destinations";
-import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Diary — Timeleap",
-  description: "AI가 생성하고 저장한 Timeleap 여행기 상세 페이지",
+  title: "Diary Detail — Timeleap",
+  description: "내 Timeleap 여행기 상세 및 공개 상태 관리",
 };
 
 const HERO_PHOTO_BY_TONE: Record<EraTone, string> = {
@@ -32,11 +36,33 @@ const HERO_PHOTO_BY_TONE: Record<EraTone, string> = {
   sepia: "ph-gilded",
 };
 
-type DiaryDetailPageProps = {
+type MyDiaryDetailPageProps = {
   params: Promise<{
     id: string;
   }>;
 };
+
+function getPassengerName({
+  displayName,
+  email,
+}: {
+  displayName?: string | null;
+  email?: string | null;
+}) {
+  const trimmedName = displayName?.trim();
+
+  if (trimmedName) {
+    return trimmedName;
+  }
+
+  const [localPart] = email?.split("@") ?? [];
+
+  return localPart || "나";
+}
+
+function getPassengerInitial(name: string) {
+  return name.slice(0, 1).toUpperCase();
+}
 
 function formatEntryDate(createdAt: string) {
   const date = new Date(createdAt);
@@ -52,34 +78,6 @@ function formatEntryDate(createdAt: string) {
   })
     .format(date)
     .replace(/\s/g, "");
-}
-
-function getPassengerName({
-  displayName,
-  email,
-  isOwner,
-}: {
-  displayName?: string | null;
-  email?: string | null;
-  isOwner: boolean;
-}) {
-  if (!isOwner) {
-    return "Timeleap Traveler";
-  }
-
-  const trimmedName = displayName?.trim();
-
-  if (trimmedName) {
-    return trimmedName;
-  }
-
-  const [localPart] = email?.split("@") ?? [];
-
-  return localPart || "나";
-}
-
-function getPassengerInitial(name: string) {
-  return name.slice(0, 1).toUpperCase();
 }
 
 function buildFallbackBody({
@@ -98,48 +96,48 @@ function buildFallbackBody({
   return `${eraYear}년 ${sceneTitle}의 공기 속에서 ${sceneNote}가 먼저 다가왔다. ${countryName}의 ${eraTitle}은 아주 짧은 순간이었지만 오래 남을 하루처럼 기록되었다.`;
 }
 
-export default async function DiaryDetailPage({
+export default async function MyDiaryDetailPage({
   params,
-}: DiaryDetailPageProps) {
+}: MyDiaryDetailPageProps) {
   const { id } = await params;
   const supabase = await createClient();
   const {
     data: { user },
+    error: userError,
   } = await supabase.auth.getUser();
-  const diary = await getDiaryById(supabase, id);
+
+  if (userError || !user) {
+    redirect(createLoginRedirectPath(`/me/diaries/${id}`));
+  }
+
+  const [diary, { data: profile, error: profileError }] = await Promise.all([
+    getOwnedDiaryById({
+      id,
+      supabase,
+      userId: user.id,
+    }),
+    supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", user.id)
+      .maybeSingle(),
+  ]);
 
   if (!diary) {
     notFound();
   }
 
-  const isOwner = diary.user_id === user?.id;
-
-  if (!diary.is_public && !isOwner) {
-    notFound();
+  if (profileError) {
+    throw new Error(`Diary 프로필을 읽지 못했습니다. ${profileError.message}`);
   }
 
   const { country, era } = resolveDestinationByDiary({
     countryCode: diary.country_code,
     eraId: diary.era_id,
   });
-  const { data: ownerProfile, error: ownerProfileError } = isOwner
-    ? await supabase
-        .from("profiles")
-        .select("display_name")
-        .eq("id", diary.user_id)
-        .maybeSingle()
-    : { data: null, error: null };
-
-  if (ownerProfileError) {
-    throw new Error(
-      `Diary 프로필을 읽지 못했습니다. ${ownerProfileError.message}`,
-    );
-  }
-
   const passengerName = getPassengerName({
-    displayName: ownerProfile?.display_name,
-    email: user?.email,
-    isOwner,
+    displayName: profile?.display_name,
+    email: user.email,
   });
   const passengerInitial = getPassengerInitial(passengerName);
   const entryDate = formatEntryDate(diary.created_at);
@@ -153,10 +151,15 @@ export default async function DiaryDetailPage({
       sceneNote: era.sceneCards[0].note,
       sceneTitle: era.sceneCards[0].title,
     });
+  const heroImageUrl = await createDiaryHeroImageUrlOrNull(
+    supabase,
+    diary.hero_image_path,
+  );
   const heroPhotoClass = HERO_PHOTO_BY_TONE[era.tone];
-  const heroImageUrl = diary.hero_image_path
-    ? await createDiaryHeroImageUrl(supabase, diary.hero_image_path)
-    : null;
+  const visibilityTarget = diary.is_public ? "false" : "true";
+  const visibilityActionLabel = diary.is_public
+    ? "비공개로 전환"
+    : "공개로 전환";
   const tags = [
     `#${country.name}`,
     `#${era.year}`,
@@ -185,36 +188,47 @@ export default async function DiaryDetailPage({
 
           <div className="ml-auto flex items-center gap-2">
             <Link
-              href="/time-machine"
+              href="/me/diaries"
               className="rounded-full px-3.5 py-2 font-mono text-[11px] tracking-[.08em] uppercase opacity-55 transition-opacity hover:opacity-100"
+            >
+              내 일기장
+            </Link>
+            <Link
+              href="/time-machine"
+              className="hidden rounded-full px-3.5 py-2 font-mono text-[11px] tracking-[.08em] uppercase opacity-55 transition-opacity hover:opacity-100 sm:inline-flex"
             >
               다시 떠나기
             </Link>
-            {user ? (
-              <>
-                <span className="border-ink/12 bg-paper-2/70 hidden rounded-full border px-3 py-2 font-mono text-[10px] tracking-[.08em] opacity-55 sm:inline-flex">
-                  {passengerName}
-                </span>
-                <form action={signOut}>
-                  <button
-                    type="submit"
-                    className="rounded-full px-3.5 py-2 font-mono text-[11px] tracking-[.08em] uppercase opacity-55 transition-opacity hover:opacity-100"
-                  >
-                    로그아웃
-                  </button>
-                </form>
-              </>
-            ) : null}
+            <span className="border-ink/12 bg-paper-2/70 hidden rounded-full border px-3 py-2 font-mono text-[10px] tracking-[.08em] opacity-55 md:inline-flex">
+              {passengerName}
+            </span>
+            <form action={signOut}>
+              <button
+                type="submit"
+                className="rounded-full px-3.5 py-2 font-mono text-[11px] tracking-[.08em] uppercase opacity-55 transition-opacity hover:opacity-100"
+              >
+                로그아웃
+              </button>
+            </form>
           </div>
         </div>
       </nav>
 
       <main className="relative z-10 min-h-[calc(100dvh-57px)] pb-20">
-        <section className="border-ink/10 mx-auto max-w-[780px] border-b px-6 pt-12 pb-8 text-center lg:pt-14">
-          <div className="mb-4 flex items-center justify-center gap-5">
+        <section className="border-ink/10 mx-auto max-w-[860px] border-b px-6 pt-12 pb-8 text-center lg:pt-14">
+          <div className="mb-4 flex flex-wrap items-center justify-center gap-4">
             <span className="stamp">ARRIVED · {era.year}</span>
             <span className="font-mono text-[12px] tracking-[0.15em] opacity-65">
               {entryDate}
+            </span>
+            <span
+              className={`rounded-full px-3 py-1.5 font-mono text-[10px] tracking-[0.12em] ${
+                diary.is_public
+                  ? "bg-sage/14 text-sage"
+                  : "bg-ink/8 text-ink/60"
+              }`}
+            >
+              {diary.is_public ? "PUBLIC" : "PRIVATE"}
             </span>
           </div>
 
@@ -229,7 +243,7 @@ export default async function DiaryDetailPage({
             </span>
           </div>
 
-          <h1 className="font-display mx-auto max-w-[680px] text-[clamp(34px,5vw,58px)] leading-[1.04] tracking-[-0.03em] italic">
+          <h1 className="font-display mx-auto max-w-[720px] text-[clamp(34px,5vw,58px)] leading-[1.04] tracking-[-0.03em] italic">
             {title}
           </h1>
 
@@ -241,16 +255,16 @@ export default async function DiaryDetailPage({
           </div>
         </section>
 
-        <section className="mx-auto max-w-[780px] px-6 pt-10">
-          <div className="my-10 flex justify-center">
-            <figure className="bg-paper relative w-full max-w-[430px] rotate-[-1.2deg] p-3 pb-12 shadow-[0_1px_0_rgba(0,0,0,.05),0_18px_40px_-18px_rgba(0,0,0,.28)]">
+        <section className="mx-auto max-w-[860px] px-6 pt-10">
+          <div className="mb-10 flex justify-center">
+            <figure className="bg-paper relative w-full max-w-[520px] rotate-[-1.2deg] p-3 pb-12 shadow-[0_1px_0_rgba(0,0,0,.05),0_18px_40px_-18px_rgba(0,0,0,.28)]">
               <div className="bg-paper-3 relative aspect-[4/5] overflow-hidden">
                 {heroImageUrl ? (
                   <Image
                     src={heroImageUrl}
                     alt={`${country.name} ${era.title} 대표 사진`}
                     fill
-                    sizes="(min-width: 1024px) 430px, 100vw"
+                    sizes="(min-width: 1024px) 520px, 100vw"
                     className="object-cover"
                     unoptimized
                   />
@@ -268,18 +282,64 @@ export default async function DiaryDetailPage({
             </figure>
           </div>
 
-          <article className="text-ink-2 mx-auto max-w-[680px] font-serif text-[19px] leading-[1.9]">
+          <article className="text-ink-2 mx-auto max-w-[720px] font-serif text-[20px] leading-[1.9]">
             <p className="text-pretty">{diaryEntry}</p>
           </article>
-        </section>
 
-        <ResultFooter
-          diaryId={diary.id}
-          initialIsPublic={diary.is_public}
-          isOwner={isOwner}
-          myDiaryHref={isOwner ? `/me/diaries/${diary.id}` : undefined}
-          tags={tags}
-        />
+          <aside className="border-ink/12 mx-auto mt-10 max-w-[720px] border-t pt-4">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-3 font-mono text-[11px] tracking-[0.1em]">
+              <span
+                className={`tracking-[0.12em] ${
+                  diary.is_public ? "text-sage" : "text-ink/50"
+                }`}
+              >
+                {diary.is_public ? "PUBLIC" : "PRIVATE"}
+              </span>
+              <form action={updateDiaryVisibility}>
+                <input type="hidden" name="diaryId" value={diary.id} />
+                <input type="hidden" name="isPublic" value={visibilityTarget} />
+                <button
+                  type="submit"
+                  className="text-ink/65 hover:text-ink transition-colors"
+                >
+                  {visibilityActionLabel}
+                </button>
+              </form>
+              <Link
+                href={`/diary/${diary.id}`}
+                className="text-ink/65 hover:text-ink transition-colors"
+              >
+                공유용 보기
+              </Link>
+              <Link
+                href="/time-machine"
+                className="text-ink/65 hover:text-ink transition-colors"
+              >
+                다시 떠나기
+              </Link>
+              <form action={deleteDiary} className="sm:ml-auto">
+                <input type="hidden" name="diaryId" value={diary.id} />
+                <button
+                  type="submit"
+                  className="text-coral/80 hover:text-coral transition-colors"
+                >
+                  삭제
+                </button>
+              </form>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-x-3 gap-y-1">
+              {tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="text-ember-2 font-mono text-[10px] tracking-[0.1em] uppercase opacity-80"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </aside>
+        </section>
       </main>
     </div>
   );
