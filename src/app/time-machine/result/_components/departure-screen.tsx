@@ -3,10 +3,15 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { generateDiaryFromSelection } from "@/actions/time-machine";
+import {
+  generateDiaryFromSelection,
+  getDiaryGenerationStatus,
+} from "@/actions/time-machine";
 import styles from "./departure-screen.module.css";
 
 const REDIRECT_DELAY_MS = 3000;
+const STATUS_POLL_INTERVAL_MS = 2000;
+const STATUS_POLL_TIMEOUT_MS = 5 * 60 * 1000;
 const PHASE_TIMINGS = [0, 800, 1600, 2400] as const;
 
 type DepartureScreenProps = {
@@ -29,12 +34,85 @@ const PHASES = [
   { description: "도착 좌표를 고정합니다…", number: "04", title: "도착 준비" },
 ] as const;
 
+type GenerationFlowInput = {
+  countryCode: string;
+  eraId: string;
+  generationRequestId: string;
+};
+
+type GenerationFlowResult = {
+  diaryId: string;
+};
+
 function formatCoordinate(
   value: number,
   negativeSuffix: string,
   positiveSuffix: string,
 ) {
   return `${Math.abs(value).toFixed(2)}°${value < 0 ? negativeSuffix : positiveSuffix}`;
+}
+
+function waitForStatusPollDelay() {
+  return new Promise<void>((resolve) => {
+    window.setTimeout(resolve, STATUS_POLL_INTERVAL_MS);
+  });
+}
+
+async function waitForExistingGeneration({
+  generationRequestId,
+}: Pick<
+  GenerationFlowInput,
+  "generationRequestId"
+>): Promise<GenerationFlowResult> {
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < STATUS_POLL_TIMEOUT_MS) {
+    await waitForStatusPollDelay();
+
+    const status = await getDiaryGenerationStatus({
+      generationRequestId,
+    });
+
+    if (status.status === "succeeded") {
+      return {
+        diaryId: status.diaryId,
+      };
+    }
+
+    if (status.status === "failed") {
+      throw new Error(status.message);
+    }
+  }
+
+  throw new Error(
+    "생성 상태 확인이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.",
+  );
+}
+
+async function runGenerationFlow({
+  countryCode,
+  eraId,
+  generationRequestId,
+}: GenerationFlowInput): Promise<GenerationFlowResult> {
+  const result = await generateDiaryFromSelection({
+    countryCode,
+    eraId,
+    generationRequestId,
+  });
+
+  if (result.status === "succeeded") {
+    return {
+      diaryId: result.diaryId,
+    };
+  }
+
+  if (result.status === "failed") {
+    throw new Error(result.message);
+  }
+
+  return waitForExistingGeneration({
+    generationRequestId,
+  });
 }
 
 export default function DepartureScreen({
@@ -50,9 +128,9 @@ export default function DepartureScreen({
   longitude,
 }: DepartureScreenProps) {
   const router = useRouter();
-  const generationPromiseRef = useRef<ReturnType<
-    typeof generateDiaryFromSelection
-  > | null>(null);
+  const generationPromiseRef = useRef<Promise<GenerationFlowResult> | null>(
+    null,
+  );
   const generationRequestIdRef = useRef(generationRequestId);
   const [phaseIndex, setPhaseIndex] = useState(0);
   const [generationError, setGenerationError] = useState<string | null>(null);
@@ -98,7 +176,7 @@ export default function DepartureScreen({
     }
 
     if (!generationPromiseRef.current) {
-      generationPromiseRef.current = generateDiaryFromSelection({
+      generationPromiseRef.current = runGenerationFlow({
         countryCode,
         eraId,
         generationRequestId,
@@ -108,10 +186,7 @@ export default function DepartureScreen({
     const generationPromise = generationPromiseRef.current;
 
     startTransition(() => {
-      void Promise.all([
-        generationPromise,
-        minimumDelay,
-      ])
+      void Promise.all([generationPromise, minimumDelay])
         .then(([result]) => {
           if (cancelled) {
             return;

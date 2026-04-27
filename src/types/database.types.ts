@@ -53,6 +53,62 @@ export type Database = {
         }
         Relationships: []
       }
+      generation_jobs: {
+        Row: {
+          completed_at: string | null
+          country_code: string
+          created_at: string
+          diary_id: string | null
+          era_id: string
+          error_message: string | null
+          failed_at: string | null
+          id: string
+          lease_expires_at: string
+          started_at: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          country_code: string
+          created_at?: string
+          diary_id?: string | null
+          era_id: string
+          error_message?: string | null
+          failed_at?: string | null
+          id: string
+          lease_expires_at: string
+          started_at?: string
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          country_code?: string
+          created_at?: string
+          diary_id?: string | null
+          era_id?: string
+          error_message?: string | null
+          failed_at?: string | null
+          id?: string
+          lease_expires_at?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generation_jobs_diary_id_fkey"
+            columns: ["diary_id"]
+            isOneToOne: false
+            referencedRelation: "diaries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       instruments: {
         Row: {
           id: number

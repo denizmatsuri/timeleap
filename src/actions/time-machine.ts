@@ -5,6 +5,17 @@ import {
   getDiaryByGenerationRequestId,
 } from "@/lib/diaries/server";
 import {
+  createOrGetGenerationJob,
+  getGenerationJobById,
+  hasGenerationJobLeaseExpired,
+  isGenerationJobFailed,
+  isGenerationJobRunning,
+  isGenerationJobSucceeded,
+  markGenerationJobFailed,
+  markGenerationJobSucceeded,
+  type GenerationJobRecord,
+} from "@/lib/time-machine/generation-job";
+import {
   generateDiaryHeroImage,
   generateDiaryText,
   type ReferenceImageInput,
@@ -24,6 +35,10 @@ export type GenerateDiaryFromSelectionInput = {
   eraId: string;
   generationRequestId: string;
 };
+export type DiaryGenerationStatus =
+  | { status: "failed"; message: string }
+  | { status: "running" }
+  | { diaryId: string; status: "succeeded" };
 
 function toErrorMessage(error: unknown) {
   if (error instanceof Error && error.message.trim()) {
@@ -61,6 +76,77 @@ function inferExtensionFromMimeType(mimeType: string) {
 
 function buildFallbackDiaryTitle(sceneTitle: string) {
   return sceneTitle.slice(0, 12).trim() || "시간 여행";
+}
+
+async function resolveGenerationJobStatus({
+  generationRequestId,
+  job,
+  supabase,
+  userId,
+}: {
+  generationRequestId: string;
+  job: GenerationJobRecord;
+  supabase: SupabaseServerClient;
+  userId: string;
+}): Promise<DiaryGenerationStatus> {
+  if (isGenerationJobSucceeded(job)) {
+    if (job.diary_id) {
+      return {
+        diaryId: job.diary_id,
+        status: "succeeded",
+      };
+    }
+
+    const existingDiary = await getDiaryByGenerationRequestId({
+      generationRequestId,
+      supabase,
+      userId,
+    });
+
+    if (existingDiary) {
+      return {
+        diaryId: existingDiary.id,
+        status: "succeeded",
+      };
+    }
+
+    return {
+      message: "완료된 생성 작업의 여행기를 찾을 수 없습니다.",
+      status: "failed",
+    };
+  }
+
+  if (isGenerationJobFailed(job)) {
+    return {
+      message: job.error_message ?? "여행기 생성에 실패했습니다.",
+      status: "failed",
+    };
+  }
+
+  if (hasGenerationJobLeaseExpired(job)) {
+    const failedJob = await markGenerationJobFailed({
+      errorMessage: "생성 시간이 초과되었습니다. 다시 출발해 주세요.",
+      generationRequestId,
+      supabase,
+      userId,
+    });
+
+    return {
+      message: failedJob.error_message ?? "생성 시간이 초과되었습니다.",
+      status: "failed",
+    };
+  }
+
+  if (isGenerationJobRunning(job)) {
+    return {
+      status: "running",
+    };
+  }
+
+  return {
+    message: "알 수 없는 생성 작업 상태입니다.",
+    status: "failed",
+  };
 }
 
 async function readReferenceImages({
@@ -143,7 +229,7 @@ export async function generateDiaryFromSelection({
   countryCode,
   eraId,
   generationRequestId,
-}: GenerateDiaryFromSelectionInput) {
+}: GenerateDiaryFromSelectionInput): Promise<DiaryGenerationStatus> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -154,6 +240,10 @@ export async function generateDiaryFromSelection({
     throw new Error("로그인이 필요합니다.");
   }
 
+  const { country, era } = resolveDestinationSelection({
+    countryCode,
+    eraId,
+  });
   const existingDiary = await getDiaryByGenerationRequestId({
     generationRequestId,
     supabase,
@@ -163,73 +253,88 @@ export async function generateDiaryFromSelection({
   if (existingDiary) {
     return {
       diaryId: existingDiary.id,
+      status: "succeeded",
     };
   }
 
-  const { country, era } = resolveDestinationSelection({
-    countryCode,
-    eraId,
-  });
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("display_name, age_range, gender")
-    .eq("id", user.id)
-    .maybeSingle();
-  const { data: faceImages, error: faceImagesError } = await supabase
-    .from("profile_face_images")
-    .select("storage_path")
-    .eq("user_id", user.id)
-    .limit(MAX_REFERENCE_IMAGES);
-
-  if (profileError) {
-    throw new Error(`프로필을 읽지 못했습니다. ${profileError.message}`);
-  }
-
-  if (faceImagesError) {
-    throw new Error(`얼굴 사진을 읽지 못했습니다. ${faceImagesError.message}`);
-  }
-
-  const referenceImagePaths = faceImages.map((image) => image.storage_path);
-  const referenceImages = await readReferenceImages({
+  const jobClaim = await createOrGetGenerationJob({
+    countryCode: country.code,
+    eraId: era.id,
+    generationRequestId,
     supabase,
-    storagePaths: referenceImagePaths,
     userId: user.id,
   });
-  const heroScene = era.sceneCards[0];
-  const imagePrompt = buildGenerateImagePrompt({
-    ageRange: profile?.age_range,
-    city: era.city,
-    countryEnglishName: country.englishName,
-    countryName: country.name,
-    eraHeadline: era.headline,
-    eraTitle: era.title,
-    eraYear: era.year,
-    gender: profile?.gender,
-    mood: era.mood,
-    motifs: era.motifs,
-    referenceImageCount: referenceImages.length,
-    sceneNote: heroScene.note,
-    sceneTitle: heroScene.title,
-    soundtrack: era.soundtrack,
-    texture: era.texture,
-    wardrobe: era.wardrobe,
-  });
-  const textPrompt = buildGenerateTextPrompt({
-    ageRange: profile?.age_range,
-    city: era.city,
-    countryName: country.name,
-    displayName: profile?.display_name ?? user.email ?? null,
-    eraTitle: era.title,
-    eraYear: era.year,
-    gender: profile?.gender,
-    mood: era.mood,
-    sceneNote: heroScene.note,
-    sceneTitle: heroScene.title,
-    texture: era.texture,
-    wardrobe: era.wardrobe,
-  });
+
+  if (jobClaim.kind === "existing") {
+    return resolveGenerationJobStatus({
+      generationRequestId,
+      job: jobClaim.job,
+      supabase,
+      userId: user.id,
+    });
+  }
 
   try {
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("display_name, age_range, gender")
+      .eq("id", user.id)
+      .maybeSingle();
+    const { data: faceImages, error: faceImagesError } = await supabase
+      .from("profile_face_images")
+      .select("storage_path")
+      .eq("user_id", user.id)
+      .limit(MAX_REFERENCE_IMAGES);
+
+    if (profileError) {
+      throw new Error(`프로필을 읽지 못했습니다. ${profileError.message}`);
+    }
+
+    if (faceImagesError) {
+      throw new Error(
+        `얼굴 사진을 읽지 못했습니다. ${faceImagesError.message}`,
+      );
+    }
+
+    const referenceImagePaths = faceImages.map((image) => image.storage_path);
+    const referenceImages = await readReferenceImages({
+      supabase,
+      storagePaths: referenceImagePaths,
+      userId: user.id,
+    });
+    const heroScene = era.sceneCards[0];
+    const imagePrompt = buildGenerateImagePrompt({
+      ageRange: profile?.age_range,
+      city: era.city,
+      countryEnglishName: country.englishName,
+      countryName: country.name,
+      eraHeadline: era.headline,
+      eraTitle: era.title,
+      eraYear: era.year,
+      gender: profile?.gender,
+      mood: era.mood,
+      motifs: era.motifs,
+      referenceImageCount: referenceImages.length,
+      sceneNote: heroScene.note,
+      sceneTitle: heroScene.title,
+      soundtrack: era.soundtrack,
+      texture: era.texture,
+      wardrobe: era.wardrobe,
+    });
+    const textPrompt = buildGenerateTextPrompt({
+      ageRange: profile?.age_range,
+      city: era.city,
+      countryName: country.name,
+      displayName: profile?.display_name ?? user.email ?? null,
+      eraTitle: era.title,
+      eraYear: era.year,
+      gender: profile?.gender,
+      mood: era.mood,
+      sceneNote: heroScene.note,
+      sceneTitle: heroScene.title,
+      texture: era.texture,
+      wardrobe: era.wardrobe,
+    });
     const generatedText = await generateDiaryText({
       prompt: textPrompt,
     });
@@ -254,10 +359,80 @@ export async function generateDiaryFromSelection({
       userId: user.id,
     });
 
+    await markGenerationJobSucceeded({
+      diaryId: savedDiary.id,
+      generationRequestId,
+      supabase,
+      userId: user.id,
+    });
+
     return {
       diaryId: savedDiary.id,
+      status: "succeeded",
     };
   } catch (error) {
-    throw new Error(toErrorMessage(error));
+    const message = toErrorMessage(error);
+
+    try {
+      await markGenerationJobFailed({
+        errorMessage: message,
+        generationRequestId,
+        supabase,
+        userId: user.id,
+      });
+    } catch {
+      // The original generation failure is the actionable error for the user.
+    }
+
+    throw new Error(message);
   }
+}
+
+export async function getDiaryGenerationStatus({
+  generationRequestId,
+}: {
+  generationRequestId: string;
+}): Promise<DiaryGenerationStatus> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  const existingDiary = await getDiaryByGenerationRequestId({
+    generationRequestId,
+    supabase,
+    userId: user.id,
+  });
+
+  if (existingDiary) {
+    return {
+      diaryId: existingDiary.id,
+      status: "succeeded",
+    };
+  }
+
+  const job = await getGenerationJobById({
+    generationRequestId,
+    supabase,
+    userId: user.id,
+  });
+
+  if (!job) {
+    return {
+      message: "생성 작업을 찾을 수 없습니다.",
+      status: "failed",
+    };
+  }
+
+  return resolveGenerationJobStatus({
+    generationRequestId,
+    job,
+    supabase,
+    userId: user.id,
+  });
 }
