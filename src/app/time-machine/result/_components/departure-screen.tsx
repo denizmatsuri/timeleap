@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { generateDiaryFromSelection } from "@/actions/time-machine";
 import styles from "./departure-screen.module.css";
@@ -17,6 +17,7 @@ type DepartureScreenProps = {
   eraId: string;
   eraLabel: string;
   eraTitle: string;
+  generationRequestId: string;
   latitude: number;
   longitude: number;
 };
@@ -44,10 +45,15 @@ export default function DepartureScreen({
   eraId,
   eraLabel,
   eraTitle,
+  generationRequestId,
   latitude,
   longitude,
 }: DepartureScreenProps) {
   const router = useRouter();
+  const generationPromiseRef = useRef<ReturnType<
+    typeof generateDiaryFromSelection
+  > | null>(null);
+  const generationRequestIdRef = useRef(generationRequestId);
   const [phaseIndex, setPhaseIndex] = useState(0);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
@@ -86,12 +92,24 @@ export default function DepartureScreen({
       timers.push(delayTimer);
     });
 
+    if (generationRequestIdRef.current !== generationRequestId) {
+      generationPromiseRef.current = null;
+      generationRequestIdRef.current = generationRequestId;
+    }
+
+    if (!generationPromiseRef.current) {
+      generationPromiseRef.current = generateDiaryFromSelection({
+        countryCode,
+        eraId,
+        generationRequestId,
+      });
+    }
+
+    const generationPromise = generationPromiseRef.current;
+
     startTransition(() => {
       void Promise.all([
-        generateDiaryFromSelection({
-          countryCode,
-          eraId,
-        }),
+        generationPromise,
         minimumDelay,
       ])
         .then(([result]) => {
@@ -105,6 +123,8 @@ export default function DepartureScreen({
           if (cancelled) {
             return;
           }
+
+          generationPromiseRef.current = null;
 
           if (error instanceof Error && error.message.trim()) {
             setGenerationError(error.message);
@@ -124,7 +144,7 @@ export default function DepartureScreen({
         window.clearTimeout(timer);
       }
     };
-  }, [countryCode, eraId, retryCount, router]);
+  }, [countryCode, eraId, generationRequestId, retryCount, router]);
 
   return (
     <div className={styles.departure}>

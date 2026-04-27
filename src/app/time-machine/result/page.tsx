@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import DepartureScreen from "@/app/time-machine/result/_components/departure-screen";
 import type { DestinationCountry } from "@/app/time-machine/_data/time-machine-destinations";
 import {
@@ -43,18 +44,39 @@ const ERA_EMOJI_BY_ID: Record<string, string> = {
   "us-drive-in": "🚗",
   "us-harlem": "🎷",
 };
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type ResultPageProps = {
   searchParams: Promise<{
     country?: string | string[];
     era?: string | string[];
+    requestId?: string | string[];
   }>;
 };
+
+function readGenerationRequestId(value: string | string[] | undefined) {
+  const requestId = readQueryValue(value);
+
+  if (!requestId || !UUID_PATTERN.test(requestId)) {
+    return null;
+  }
+
+  return requestId;
+}
 
 export default async function TimeMachineResultPage({
   searchParams,
 }: ResultPageProps) {
   const resolvedSearchParams = await searchParams;
+  const generationRequestId = readGenerationRequestId(
+    resolvedSearchParams.requestId,
+  );
+
+  if (!generationRequestId) {
+    redirect("/time-machine");
+  }
+
   const { country, era } = resolveDestinationSelection({
     countryCode: readQueryValue(resolvedSearchParams.country),
     eraId: readQueryValue(resolvedSearchParams.era),
@@ -70,6 +92,7 @@ export default async function TimeMachineResultPage({
       eraId={era.id}
       eraLabel={era.year}
       eraTitle={era.title}
+      generationRequestId={generationRequestId}
       latitude={coordinates.lat}
       longitude={coordinates.lng}
     />

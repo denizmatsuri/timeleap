@@ -4,7 +4,7 @@ import type { createClient } from "@/lib/supabase/server";
 import type { Tables } from "@/types/database.types";
 
 const DIARY_COLUMNS =
-  "id,user_id,country_code,era_id,title,body,hero_image_path,is_public,created_at";
+  "id,user_id,country_code,era_id,generation_request_id,title,body,hero_image_path,is_public,created_at";
 const DIARY_IMAGE_BUCKET = "diary-images";
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 export type DiaryRecord = Tables<"diaries">;
@@ -13,6 +13,7 @@ export type CreateDiaryInput = {
   body: string;
   countryCode: string;
   eraId: string;
+  generationRequestId: string;
   heroImagePath: string;
   title: string;
   userId: string;
@@ -20,7 +21,15 @@ export type CreateDiaryInput = {
 
 export async function createDiary(
   supabase: SupabaseServerClient,
-  { body, countryCode, eraId, heroImagePath, title, userId }: CreateDiaryInput,
+  {
+    body,
+    countryCode,
+    eraId,
+    generationRequestId,
+    heroImagePath,
+    title,
+    userId,
+  }: CreateDiaryInput,
 ) {
   const { data, error } = await supabase
     .from("diaries")
@@ -28,6 +37,7 @@ export async function createDiary(
       body,
       country_code: countryCode,
       era_id: eraId,
+      generation_request_id: generationRequestId,
       hero_image_path: heroImagePath,
       is_public: false,
       title,
@@ -37,11 +47,48 @@ export async function createDiary(
     .single();
 
   if (error) {
+    if (error.code === "23505") {
+      const existingDiary = await getDiaryByGenerationRequestId({
+        generationRequestId,
+        supabase,
+        userId,
+      });
+
+      if (existingDiary) {
+        await supabase.storage.from(DIARY_IMAGE_BUCKET).remove([heroImagePath]);
+
+        return existingDiary;
+      }
+    }
+
     throw new Error(`Diary 저장에 실패했습니다. ${error.message}`);
   }
 
   if (!data) {
     throw new Error("Diary 저장 결과를 확인할 수 없습니다.");
+  }
+
+  return data;
+}
+
+export async function getDiaryByGenerationRequestId({
+  generationRequestId,
+  supabase,
+  userId,
+}: {
+  generationRequestId: string;
+  supabase: SupabaseServerClient;
+  userId: string;
+}) {
+  const { data, error } = await supabase
+    .from("diaries")
+    .select(DIARY_COLUMNS)
+    .eq("user_id", userId)
+    .eq("generation_request_id", generationRequestId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Diary 요청 조회에 실패했습니다. ${error.message}`);
   }
 
   return data;

@@ -1,6 +1,9 @@
 "use server";
 
-import { createDiary } from "@/lib/diaries/server";
+import {
+  createDiary,
+  getDiaryByGenerationRequestId,
+} from "@/lib/diaries/server";
 import {
   generateDiaryHeroImage,
   generateDiaryText,
@@ -19,6 +22,7 @@ type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 export type GenerateDiaryFromSelectionInput = {
   countryCode: string;
   eraId: string;
+  generationRequestId: string;
 };
 
 function toErrorMessage(error: unknown) {
@@ -138,6 +142,7 @@ async function uploadGeneratedHeroImage({
 export async function generateDiaryFromSelection({
   countryCode,
   eraId,
+  generationRequestId,
 }: GenerateDiaryFromSelectionInput) {
   const supabase = await createClient();
   const {
@@ -147,6 +152,18 @@ export async function generateDiaryFromSelection({
 
   if (userError || !user) {
     throw new Error("로그인이 필요합니다.");
+  }
+
+  const existingDiary = await getDiaryByGenerationRequestId({
+    generationRequestId,
+    supabase,
+    userId: user.id,
+  });
+
+  if (existingDiary) {
+    return {
+      diaryId: existingDiary.id,
+    };
   }
 
   const { country, era } = resolveDestinationSelection({
@@ -231,6 +248,7 @@ export async function generateDiaryFromSelection({
       body: generatedText.body,
       countryCode: country.code,
       eraId: era.id,
+      generationRequestId,
       heroImagePath,
       title: generatedText.title || buildFallbackDiaryTitle(heroScene.title),
       userId: user.id,

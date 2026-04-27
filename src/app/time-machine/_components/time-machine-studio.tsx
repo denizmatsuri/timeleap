@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   useEffect,
   useMemo,
@@ -154,6 +155,7 @@ function cn(...classNames: Array<string | false | null | undefined>) {
 export default function TimeMachineStudio({
   showMyDiariesLink,
 }: TimeMachineStudioProps) {
+  const router = useRouter();
   const [selectedCountryCode, setSelectedCountryCode] = useState<
     DestinationCountry["code"]
   >(INITIAL_COUNTRY.code);
@@ -181,7 +183,16 @@ export default function TimeMachineStudio({
     activeCountry.eras.find((era) => era.id === selectedEraId) ??
     activeCountry.eras[0];
   const activeEraEmoji = ERA_EMOJI_BY_ID[activeEra.id] ?? "✦";
-  const departureHref = `/time-machine/result?country=${activeCountry.code}&era=${activeEra.id}`;
+
+  const handleDepartTimeMachine = () => {
+    const searchParams = new URLSearchParams({
+      country: activeCountry.code,
+      era: activeEra.id,
+      requestId: crypto.randomUUID(),
+    });
+
+    router.push(`/time-machine/result?${searchParams.toString()}`);
+  };
 
   const clearAutoRotateResume = () => {
     if (autoRotateTimeoutRef.current !== null) {
@@ -736,9 +747,13 @@ export default function TimeMachineStudio({
               >
                 🎲 랜덤 좌표
               </button>
-              <Link href={departureHref} className={styles.departBtn}>
+              <button
+                type="button"
+                className={styles.departBtn}
+                onClick={handleDepartTimeMachine}
+              >
                 ✦ 출발
-              </Link>
+              </button>
             </div>
 
             <div className={styles.tmMeta}>

@@ -20,6 +20,7 @@ export type Database = {
           country_code: string
           created_at: string
           era_id: string
+          generation_request_id: string | null
           hero_image_path: string | null
           id: string
           is_public: boolean
@@ -31,6 +32,7 @@ export type Database = {
           country_code: string
           created_at?: string
           era_id: string
+          generation_request_id?: string | null
           hero_image_path?: string | null
           id?: string
           is_public?: boolean
@@ -42,6 +44,7 @@ export type Database = {
           country_code?: string
           created_at?: string
           era_id?: string
+          generation_request_id?: string | null
           hero_image_path?: string | null
           id?: string
           is_public?: boolean
