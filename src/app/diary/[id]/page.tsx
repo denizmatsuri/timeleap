@@ -243,7 +243,7 @@ export default async function DiaryDetailPage({
 
         <section className="mx-auto max-w-[780px] px-6 pt-10">
           <div className="my-10 flex justify-center">
-            <figure className="bg-paper relative w-full max-w-[530px] rotate-[-1.2deg] p-3 pb-12 shadow-[0_1px_0_rgba(0,0,0,.05),0_18px_40px_-18px_rgba(0,0,0,.28)]">
+            <figure className="bg-photocard relative w-full max-w-[530px] rotate-[-1.2deg] p-3 pb-12 shadow-[0_1px_0_rgba(0,0,0,.05),0_18px_40px_-18px_rgba(0,0,0,.28)]">
               <div className="bg-paper-3 relative aspect-[4/5] overflow-hidden">
                 {heroImageUrl ? (
                   <Image
@@ -257,10 +257,10 @@ export default async function DiaryDetailPage({
                 ) : (
                   <div className={`${heroPhotoClass} absolute inset-0`} />
                 )}
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(0,0,0,0.24))]" />
-                <div className="absolute bottom-3 left-3 rounded-sm bg-black/30 px-2 py-1 font-mono text-[9px] tracking-[0.12em] text-white/75 uppercase">
+                {/* <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(0,0,0,0.24))]" /> */}
+                {/* <div className="absolute bottom-3 left-3 rounded-sm bg-black/30 px-2 py-1 font-mono text-[9px] tracking-[0.12em] text-white/75 uppercase">
                   Generated Hero Frame
-                </div>
+                </div> */}
               </div>
               <figcaption className="font-handwriting text-ink-2 absolute inset-x-3 bottom-3 text-center text-[16px] italic">
                 {era.sceneCards[0].note}

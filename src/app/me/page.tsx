@@ -604,7 +604,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
                 <Link
                   key={diary.id}
                   href={`/diary/${diary.id}`}
-                  className={`group relative flex flex-col bg-[#fffaed] p-3 pb-5 shadow-[0_1px_0_rgba(0,0,0,.05),0_18px_40px_-20px_rgba(0,0,0,.32)] transition-all duration-300 hover:-translate-y-1 hover:rotate-0 hover:shadow-[0_18px_44px_-18px_rgba(0,0,0,.36)] ${DIARY_CARD_ROTATE_CLASSES[index % DIARY_CARD_ROTATE_CLASSES.length]}`}
+                  className={`group bg-photocard relative flex flex-col p-3 pb-5 shadow-[0_1px_0_rgba(0,0,0,.05),0_18px_40px_-20px_rgba(0,0,0,.32)] transition-all duration-300 hover:-translate-y-1 hover:rotate-0 hover:shadow-[0_18px_44px_-18px_rgba(0,0,0,.36)] ${DIARY_CARD_ROTATE_CLASSES[index % DIARY_CARD_ROTATE_CLASSES.length]}`}
                 >
                   <div className="bg-paper-3 relative aspect-[4/5] overflow-hidden">
                     {diary.heroImageUrl ? (
