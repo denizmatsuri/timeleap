@@ -39,7 +39,6 @@ export async function createDiary(
       era_id: eraId,
       generation_request_id: generationRequestId,
       hero_image_path: heroImagePath,
-      is_public: false,
       title,
       user_id: userId,
     })
