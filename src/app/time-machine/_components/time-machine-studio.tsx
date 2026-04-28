@@ -463,7 +463,7 @@ export default function TimeMachineStudio({
             </Link>
             {showMyDiariesLink ? (
               <Link
-                href="/me/diaries"
+                href="/me"
                 className="rounded-full px-3.5 py-2 font-mono text-[11px] tracking-[.08em] uppercase opacity-70 transition-opacity hover:opacity-100"
               >
                 내 일기장

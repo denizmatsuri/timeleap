@@ -13,15 +13,11 @@ import {
 } from "@/lib/diaries/server";
 import { createClient } from "@/lib/supabase/server";
 
-const MY_DIARIES_PATH = "/me/diaries";
+const MY_PAGE_PATH = "/me";
 
 type DiaryVisibilityResult = {
   isPublic: boolean;
 };
-
-function createMyDiaryPath(diaryId: string) {
-  return `${MY_DIARIES_PATH}/${diaryId}`;
-}
 
 function createDiaryPath(diaryId: string) {
   return `/diary/${diaryId}`;
@@ -70,8 +66,7 @@ async function requireDiaryActionUser(nextPath: string) {
 }
 
 function revalidateDiarySurfaces(diaryId: string) {
-  revalidatePath(MY_DIARIES_PATH);
-  revalidatePath(createMyDiaryPath(diaryId));
+  revalidatePath(MY_PAGE_PATH);
   revalidatePath(createDiaryPath(diaryId));
   revalidatePath(createFeedPath(diaryId));
   revalidateTag(PUBLIC_FEED_CACHE_TAG, "max");
@@ -83,7 +78,7 @@ export async function setDiaryVisibility(
   isPublic: boolean,
 ): Promise<DiaryVisibilityResult> {
   const { supabase, user } = await requireDiaryActionUser(
-    createMyDiaryPath(diaryId),
+    createDiaryPath(diaryId),
   );
   const diary = await updateDiaryVisibilityRecord({
     id: diaryId,
@@ -106,7 +101,7 @@ export async function updateDiaryVisibility(formData: FormData): Promise<void> {
 export async function deleteDiary(formData: FormData): Promise<void> {
   const diaryId = readRequiredText(formData, "diaryId");
   const { supabase, user } = await requireDiaryActionUser(
-    createMyDiaryPath(diaryId),
+    createDiaryPath(diaryId),
   );
   const diary = await deleteDiaryWithHeroImage({
     id: diaryId,
@@ -115,5 +110,5 @@ export async function deleteDiary(formData: FormData): Promise<void> {
   });
 
   revalidateDiarySurfaces(diary.id);
-  redirect(MY_DIARIES_PATH);
+  redirect(MY_PAGE_PATH);
 }

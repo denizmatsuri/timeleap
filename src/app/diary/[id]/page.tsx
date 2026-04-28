@@ -243,14 +243,14 @@ export default async function DiaryDetailPage({
 
         <section className="mx-auto max-w-[780px] px-6 pt-10">
           <div className="my-10 flex justify-center">
-            <figure className="bg-paper relative w-full max-w-[430px] rotate-[-1.2deg] p-3 pb-12 shadow-[0_1px_0_rgba(0,0,0,.05),0_18px_40px_-18px_rgba(0,0,0,.28)]">
+            <figure className="bg-paper relative w-full max-w-[530px] rotate-[-1.2deg] p-3 pb-12 shadow-[0_1px_0_rgba(0,0,0,.05),0_18px_40px_-18px_rgba(0,0,0,.28)]">
               <div className="bg-paper-3 relative aspect-[4/5] overflow-hidden">
                 {heroImageUrl ? (
                   <Image
                     src={heroImageUrl}
                     alt={`${country.name} ${era.title} 대표 사진`}
                     fill
-                    sizes="(min-width: 1024px) 430px, 100vw"
+                    sizes="(min-width: 1024px) 530px, 100vw"
                     className="object-cover"
                     unoptimized
                   />
@@ -277,7 +277,6 @@ export default async function DiaryDetailPage({
           diaryId={diary.id}
           initialIsPublic={diary.is_public}
           isOwner={isOwner}
-          myDiaryHref={isOwner ? `/me/diaries/${diary.id}` : undefined}
           tags={tags}
         />
       </main>

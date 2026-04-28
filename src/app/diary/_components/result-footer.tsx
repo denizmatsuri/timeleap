@@ -3,13 +3,12 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { setDiaryVisibility } from "@/actions/diary";
+import { deleteDiary, setDiaryVisibility } from "@/actions/diary";
 
 type ResultFooterProps = {
-  diaryId?: string;
-  initialIsPublic?: boolean;
-  isOwner?: boolean;
-  myDiaryHref?: string;
+  diaryId: string;
+  initialIsPublic: boolean;
+  isOwner: boolean;
   tags: readonly string[];
 };
 
@@ -17,9 +16,8 @@ const SHARE_RESET_DELAY_MS = 1800;
 
 export default function ResultFooter({
   diaryId,
-  initialIsPublic = false,
-  isOwner = true,
-  myDiaryHref,
+  initialIsPublic,
+  isOwner,
   tags,
 }: ResultFooterProps) {
   const router = useRouter();
@@ -29,7 +27,6 @@ export default function ResultFooter({
   const [visibilityError, setVisibilityError] = useState<string | null>(null);
   const [isVisibilityPending, startVisibilityTransition] = useTransition();
 
-  const canToggleVisibility = isOwner || !diaryId;
   const visibilityDescription = isPublic
     ? "공개 갤러리에 노출됩니다."
     : "나만 볼 수 있습니다. 언제든 변경 가능해요.";
@@ -38,11 +35,6 @@ export default function ResultFooter({
 
   function handleToggleVisibility() {
     const nextIsPublic = !isPublic;
-
-    if (!diaryId) {
-      setIsPublic(nextIsPublic);
-      return;
-    }
 
     setVisibilityError(null);
     startVisibilityTransition(() => {
@@ -99,7 +91,7 @@ export default function ResultFooter({
         ))}
       </div>
 
-      {canToggleVisibility ? (
+      {isOwner ? (
         <div className="border-ink/12 bg-ink/4 mb-6 flex flex-col gap-5 rounded-[18px] border px-5 py-5 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="font-display text-[20px] tracking-[-0.02em]">
@@ -121,7 +113,7 @@ export default function ResultFooter({
             aria-pressed={isPublic}
             disabled={isVisibilityPending}
             onClick={handleToggleVisibility}
-            className={`relative flex h-10 w-[130px] items-center rounded-full border px-[3px] transition-colors disabled:cursor-wait disabled:opacity-60 ${
+            className={`relative flex h-10 w-[130px] cursor-pointer items-center rounded-full border px-[3px] transition-colors disabled:cursor-wait disabled:opacity-60 ${
               isPublic ? "border-ink/20 bg-ink/12" : "border-ink/18 bg-ink/8"
             }`}
           >
@@ -154,7 +146,7 @@ export default function ResultFooter({
           onClick={() => {
             setLiked((currentValue) => !currentValue);
           }}
-          className={`rounded-full px-4 py-3 font-mono text-[11px] tracking-[0.08em] uppercase transition-colors ${
+          className={`cursor-pointer rounded-full px-4 py-3 font-mono text-[11px] tracking-[0.08em] uppercase transition-colors ${
             liked
               ? "bg-coral/12 text-coral"
               : "bg-ink/8 hover:bg-ink/12 text-ink"
@@ -167,20 +159,31 @@ export default function ResultFooter({
           onClick={() => {
             void handleShare();
           }}
-          className="bg-ink/8 text-ink hover:bg-ink/12 rounded-full px-4 py-3 font-mono text-[11px] tracking-[0.08em] uppercase transition-colors"
+          className="bg-ink/8 text-ink hover:bg-ink/12 cursor-pointer rounded-full px-4 py-3 font-mono text-[11px] tracking-[0.08em] uppercase transition-colors"
         >
           {shareLabel}
         </button>
       </div>
 
       <div className="border-ink/12 flex flex-wrap justify-center gap-3 border-t pt-6">
-        {myDiaryHref ? (
+        {isOwner ? (
           <Link
-            href={myDiaryHref}
+            href="/me"
             className="bg-ink text-paper font-display rounded-full px-7 py-4 text-[15px] tracking-[-0.01em] transition-transform hover:-translate-y-px"
           >
-            내 일기 관리
+            내 기록 보기
           </Link>
+        ) : null}
+        {isOwner ? (
+          <form action={deleteDiary}>
+            <input type="hidden" name="diaryId" value={diaryId} />
+            <button
+              type="submit"
+              className="bg-coral/12 text-coral hover:bg-coral/18 font-display cursor-pointer rounded-full px-7 py-4 text-[15px] tracking-[-0.01em] transition-colors"
+            >
+              삭제
+            </button>
+          </form>
         ) : null}
         <Link
           href="/time-machine"
