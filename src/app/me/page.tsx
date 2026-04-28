@@ -67,6 +67,15 @@ type DiaryListItem = {
   title: string;
 };
 
+const DIARY_CARD_ROTATE_CLASSES = [
+  "rotate-[-0.45deg]",
+  "rotate-[0.35deg]",
+  "rotate-[-0.2deg]",
+  "rotate-[0.55deg]",
+  "rotate-[-0.65deg]",
+  "rotate-[0.15deg]",
+] as const;
+
 function toLabelMap(options: ReadonlyArray<{ label: string; value: string }>) {
   return Object.fromEntries(
     options.map((option) => [option.value, option.label]),
@@ -255,7 +264,10 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   }
 
   const [profilePhotoUrl, diaryItems] = await Promise.all([
-    createProfilePhotoUrlOrNull(supabase, faceImages?.[0]?.storage_path ?? null),
+    createProfilePhotoUrlOrNull(
+      supabase,
+      faceImages?.[0]?.storage_path ?? null,
+    ),
     Promise.all(diaries.map((diary) => toDiaryListItem(supabase, diary))),
   ]);
   const filteredDiaryItems = filterDiaryItems(diaryItems, visibilityFilter);
@@ -338,31 +350,31 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
         </div>
       </nav>
 
-      <main className="relative z-10 mx-auto max-w-300 px-6 py-10 lg:py-14">
-        <section className="relative rounded-[18px] bg-[#93851f] p-3 shadow-[0_28px_70px_-36px_rgba(0,0,0,.65)] sm:p-5">
+      <main className="relative z-10 mx-auto max-w-300 px-3 py-6 sm:px-6 sm:py-10 lg:py-14">
+        <section className="relative rounded-[14px] bg-[#7b5839] p-1.5 shadow-[0_28px_70px_-36px_rgba(0,0,0,.65)] sm:rounded-[18px] sm:p-2">
           <div className="pointer-events-none absolute inset-0 rounded-[18px] bg-[radial-gradient(circle_at_20%_10%,rgba(255,237,150,.16),transparent_32%),repeating-linear-gradient(45deg,rgba(20,18,8,.05)_0,rgba(20,18,8,.05)_1px,transparent_1px,transparent_5px)]" />
-          <div className="relative grid items-stretch overflow-hidden rounded-[10px] bg-[#d9b3a7] text-[#30231d] shadow-[0_18px_42px_-24px_rgba(0,0,0,.7)] lg:h-[720px] lg:grid-cols-2">
+          <div className="relative grid items-stretch overflow-hidden rounded-[10px] bg-[#ead9b9] bg-[url('/images/passport-linen-texture.png')] bg-[length:520px_347px] bg-repeat text-[#30231d] bg-blend-multiply shadow-[0_18px_42px_-24px_rgba(0,0,0,.6)] lg:h-[720px] lg:grid-cols-2">
             <div className="pointer-events-none absolute top-0 bottom-0 left-1/2 z-20 hidden w-9 -translate-x-1/2 bg-[linear-gradient(90deg,rgba(64,38,31,.24),rgba(255,244,221,.26)_45%,rgba(64,38,31,.18))] lg:block" />
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_0%,rgba(255,255,255,.22),transparent_28%),repeating-linear-gradient(0deg,rgba(60,39,32,.05)_0,rgba(60,39,32,.05)_1px,transparent_1px,transparent_4px)]" />
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_14%_8%,rgba(255,255,255,.28),transparent_28%),radial-gradient(circle_at_78%_22%,rgba(116,79,42,.12),transparent_26%),radial-gradient(circle_at_54%_78%,rgba(255,248,218,.2),transparent_30%),repeating-linear-gradient(0deg,rgba(60,39,32,.055)_0,rgba(60,39,32,.055)_1px,transparent_1px,transparent_4px)]" />
 
-            <div className="relative border-[#4a352b]/45 p-4 sm:p-5 lg:border-r lg:pr-8">
-              <div className="border-[#4a352b]/60 relative h-full border p-4">
-                <div className="absolute inset-2 border border-[#4a352b]/30" />
+            <div className="relative p-2 sm:p-5 lg:border-r lg:border-[#4a352b]/45 lg:pr-8">
+              <div className="relative h-full border-[#4a352b]/60 p-3 sm:border sm:p-4">
+                {/* <div className="absolute inset-2 border border-[#4a352b]/30" /> */}
                 <div className="relative">
-                  <div className="space-y-2 font-mono text-[12px] leading-tight tracking-[.05em]">
+                  <div className="space-y-1.5 font-mono text-[11px] leading-tight tracking-[.03em] sm:space-y-2 sm:text-[12px] sm:tracking-[.05em]">
                     <div>
                       <span className="opacity-55">1. Forename </span>
                       <strong className="tracking-[.12em] uppercase">
                         {passengerName}
                       </strong>
                     </div>
-                    <div>
+                    <div className="hidden sm:block">
                       <span className="opacity-55">2. Residence </span>
                       <strong className="tracking-[.12em] uppercase">
                         TIMELEAP ARCHIVE
                       </strong>
                     </div>
-                    <div>
+                    <div className="hidden sm:block">
                       <span className="opacity-55">3. Document No. </span>
                       <strong className="tracking-[.12em] uppercase">
                         {passportSerial}
@@ -382,12 +394,12 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
                     </div>
                   </div>
 
-                  <div className="mt-5 grid gap-3 sm:grid-cols-[76px_minmax(0,176px)_76px]">
-                    <div className="[writing-mode:vertical-rl] self-stretch border-r border-dashed border-[#4a352b]/45 pr-2 text-center font-mono text-[10px] tracking-[.16em] uppercase opacity-60">
+                  <div className="mt-4 grid grid-cols-1 justify-items-center gap-3 sm:mt-5 sm:grid-cols-[76px_minmax(0,176px)_76px]">
+                    <div className="hidden self-stretch border-r border-dashed border-[#4a352b]/45 pr-2 text-center font-mono text-[10px] tracking-[.16em] uppercase opacity-60 [writing-mode:vertical-rl] sm:block">
                       Recognition and credentials
                     </div>
 
-                    <div className="relative aspect-[4/5] overflow-hidden border border-[#4a352b]/55 bg-[#ead8c8] p-2 shadow-[inset_0_0_0_1px_rgba(255,255,255,.25)]">
+                    <div className="relative aspect-[4/5] w-[220px] max-w-full overflow-hidden border border-[#4a352b]/45 bg-[#f2e4c7] bg-[url('/images/passport-linen-texture.png')] bg-[length:360px_240px] bg-repeat p-2 bg-blend-multiply shadow-[inset_0_0_0_1px_rgba(255,255,255,.35)] sm:w-full sm:max-w-none">
                       <div className="relative h-full overflow-hidden grayscale">
                         {profilePhotoUrl ? (
                           <Image
@@ -395,7 +407,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
                             alt={`${passengerName} 얼굴 사진`}
                             fill
                             sizes="(min-width: 1024px) 240px, 70vw"
-                            className="object-cover sepia-[.28] contrast-[.95]"
+                            className="object-cover contrast-[.95] sepia-[.28]"
                             unoptimized
                           />
                         ) : (
@@ -404,8 +416,8 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
                       </div>
                     </div>
 
-                    <div className="flex flex-col justify-between gap-3">
-                    <div className="bg-ember/80 px-2 py-3 text-center font-mono text-[8px] leading-[1.25] tracking-[.12em] uppercase text-[#2b1b13] [writing-mode:vertical-rl]">
+                    <div className="hidden flex-col justify-between gap-3 sm:flex">
+                      <div className="bg-ember/80 px-2 py-3 text-center font-mono text-[8px] leading-[1.25] tracking-[.12em] text-[#2b1b13] uppercase [writing-mode:vertical-rl]">
                         Office of time affairs
                       </div>
                       <div className="border-t border-dotted border-[#4a352b]/70 pt-2 font-mono text-[9px] tracking-[.12em] uppercase opacity-70">
@@ -414,10 +426,10 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
                     </div>
                   </div>
 
-                  <div className="mt-4 space-y-2 font-mono text-[11px]">
+                  <div className="mt-4 space-y-2 font-mono text-[10px] sm:text-[11px]">
                     <div className="border-b border-dotted border-[#4a352b]/70 pb-1">
                       <span className="opacity-55">5. Valid Until </span>
-                      <strong className="font-display text-[22px] tracking-[.04em] text-[#8a5e74]">
+                      <strong className="font-display text-[22px] tracking-[.04em] text-[#7b5839]">
                         12.2026
                       </strong>
                     </div>
@@ -438,8 +450,8 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
                         {passengerName}
                       </div>
                     </div>
-                    <div className="grid place-items-center border border-[#4a352b]/45 p-3">
-                      <div className="grid h-16 w-16 place-items-center rounded-full border border-[#6d4f85]/65 text-center font-mono text-[9px] leading-[1.25] tracking-[.1em] text-[#5d4974] opacity-75 rotate-[-12deg]">
+                    <div className="hidden place-items-center border border-[#4a352b]/45 p-3 sm:grid">
+                      <div className="grid h-16 w-16 rotate-[-12deg] place-items-center rounded-full border border-[#6d4f85]/65 text-center font-mono text-[9px] leading-[1.25] tracking-[.1em] text-[#5d4974] opacity-75">
                         Valid
                         <br />
                         Stamp
@@ -447,7 +459,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
                     </div>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-4 gap-3">
+                  <div className="mt-4 grid grid-cols-4 gap-2 sm:gap-3">
                     {[
                       { label: "Trips", value: diaryItems.length },
                       { label: "Eras", value: visitedEraIds.size },
@@ -461,77 +473,71 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
                         <div className="font-display text-[24px] leading-none tracking-[-0.03em]">
                           {item.value}
                         </div>
-                        <div className="mt-1 font-mono text-[8px] tracking-[.16em] uppercase opacity-55">
+                        <div className="mt-1 font-mono text-[7px] tracking-[.1em] uppercase opacity-55 sm:text-[8px] sm:tracking-[.16em]">
                           {item.label}
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <Link
-                      href="/time-machine"
-                      className="bg-ink text-paper font-display inline-flex rounded-full px-5 py-3 text-[14px] tracking-[-0.01em] transition-transform hover:-translate-y-px"
-                    >
-                      다시 떠나기
-                    </Link>
+                  <div className="mt-4 flex flex-wrap">
                     <Link
                       href="/onboarding"
-                      className="inline-flex rounded-full border border-[#4a352b]/45 px-5 py-3 font-mono text-[11px] tracking-[.08em] uppercase opacity-70 transition-opacity hover:opacity-100"
+                      className="inline-flex rounded-full border border-[#4a352b] bg-[#4a352b] px-5 py-3 font-mono text-[11px] font-semibold tracking-[.08em] text-[#fff8ea] uppercase shadow-[0_10px_24px_-18px_rgba(25,18,12,.75)] transition-transform hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4a352b]"
                     >
-                      프로필 수정
+                      여권 수정
                     </Link>
                   </div>
                 </div>
               </div>
             </div>
 
-            <aside className="relative min-h-0 overflow-hidden p-4 sm:p-5 lg:pl-8">
-              <div className="border-[#4a352b]/60 relative flex h-full min-h-0 flex-col overflow-hidden border p-4">
-                <div className="absolute inset-2 border border-[#4a352b]/30" />
+            <aside className="relative min-h-0 overflow-hidden p-2 sm:p-5 lg:pl-8">
+              <div className="relative flex h-full min-h-0 flex-col overflow-hidden border-[#4a352b]/60 p-3 sm:border sm:p-4">
+                {/* <div className="absolute inset-2 border border-[#4a352b]/30" /> */}
                 <div className="relative flex shrink-0 items-start justify-between gap-4 border-b border-[#4a352b]/50 pb-3">
                   <div>
-                    <div className="font-mono text-[10px] tracking-[.16em] uppercase opacity-55">
+                    <div className="font-mono text-[9px] tracking-[.14em] uppercase opacity-55 sm:text-[10px] sm:tracking-[.16em]">
                       Identifications as of late
                     </div>
-                    <h2 className="font-display mt-2 text-[34px] leading-none tracking-[-0.03em]">
+                    <h2 className="font-display mt-1.5 text-[28px] leading-none tracking-[-0.03em] sm:mt-2 sm:text-[34px]">
                       수집된 도장
                     </h2>
                   </div>
-                  <div className="font-mono text-[14px] opacity-65">
+                  <div className="font-mono text-[18px] opacity-65 sm:text-[24px]">
                     {visitedEraIds.size}/{allEras.length}
                   </div>
                 </div>
 
-                <div className="relative mt-4 grid min-h-0 flex-1 grid-cols-2 content-start overflow-y-auto overscroll-contain border-t border-l border-[#4a352b]/40 pr-1 sm:grid-cols-3">
+                <div className="relative mt-3 grid min-h-0 flex-1 grid-cols-3 content-start overflow-y-auto overscroll-contain pr-1 sm:mt-4">
                   {allEras.map((era) => {
                     const isVisited = visitedEraIds.has(era.id);
 
                     return (
                       <div
                         key={era.id}
-                        className="relative min-h-[104px] border-r border-b border-[#4a352b]/40 p-2"
+                        className="relative min-h-[88px] p-1 sm:min-h-[104px] sm:p-2"
                       >
                         {isVisited ? (
-                          <div className="relative mx-auto min-h-[82px] border border-[#4a352b]/30 bg-[#efe2c9] px-2 py-2 text-center text-[#5a392c] shadow-[0_8px_18px_-14px_rgba(0,0,0,.65)] even:rotate-[2deg] odd:rotate-[-2deg]">
+                          <div className="relative mx-auto min-h-[76px] bg-[#ffffff] bg-[url('/images/passport-linen-texture.png')] bg-[length:260px_173px] bg-repeat px-1.5 py-2 text-center text-[#5a392c] bg-blend-multiply shadow-[0_8px_18px_-14px_rgba(0,0,0,.48)] odd:rotate-[-1deg] even:rotate-[1deg] sm:min-h-[82px] sm:px-2 sm:odd:rotate-[-2deg] sm:even:rotate-[2deg]">
                             <div className="absolute inset-x-0 top-0 h-2 bg-[repeating-linear-gradient(90deg,transparent_0,transparent_5px,rgba(74,53,43,.35)_5px,rgba(74,53,43,.35)_7px)]" />
-                            <div className="mx-auto mt-1 grid h-7 w-7 place-items-center rounded-full border border-current/45 text-[16px]">
+                            <div className="mx-auto mt-1 grid h-6 w-6 place-items-center rounded-full border border-current/45 text-[14px] sm:h-7 sm:w-7 sm:text-[16px]">
                               {era.countryFlag}
                             </div>
-                            <div className="mt-1.5 font-mono text-[8px] tracking-[.12em] opacity-65">
+                            <div className="mt-1 font-mono text-[7px] tracking-[.1em] sm:mt-1.5 sm:text-[8px] sm:tracking-[.12em]">
                               {era.year}
                             </div>
-                            <div className="mt-1 line-clamp-2 font-display text-[12px] leading-tight tracking-[-0.01em]">
+                            <div className="font-display mt-1 line-clamp-2 text-[11px] leading-tight tracking-[-0.01em] sm:text-[12px]">
                               {era.label}
                             </div>
                           </div>
                         ) : (
-                          <div className="grid h-full min-h-[82px] place-items-center border border-dashed border-[#4a352b]/24 bg-[#ead0c3]/35 px-2 text-center opacity-34">
+                          <div className="grid h-full min-h-[76px] place-items-center border border-dashed bg-center px-1 text-center bg-blend-multiply sm:min-h-[82px] sm:px-2">
                             <div>
-                              <div className="font-mono text-[8px] tracking-[.12em]">
+                              <div className="font-mono text-[7px] tracking-[.1em] sm:text-[8px] sm:tracking-[.12em]">
                                 {era.year}
                               </div>
-                              <div className="mt-1 line-clamp-2 font-display text-[12px] leading-tight tracking-[-0.01em]">
+                              <div className="font-display mt-1 line-clamp-2 text-[11px] leading-tight tracking-[-0.01em] sm:text-[12px]">
                                 {era.label}
                               </div>
                             </div>
@@ -593,14 +599,14 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredDiaryItems.map((diary) => (
+            <div className="grid grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-3">
+              {filteredDiaryItems.map((diary, index) => (
                 <Link
                   key={diary.id}
                   href={`/me/diaries/${diary.id}`}
-                  className="group border-ink/12 bg-ink/4 flex min-h-[440px] flex-col overflow-hidden rounded-[10px] border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_34px_-18px_rgba(0,0,0,.4)]"
+                  className={`group relative flex flex-col bg-[#fffaed] p-3 pb-5 shadow-[0_1px_0_rgba(0,0,0,.05),0_18px_40px_-20px_rgba(0,0,0,.32)] transition-all duration-300 hover:-translate-y-1 hover:rotate-0 hover:shadow-[0_18px_44px_-18px_rgba(0,0,0,.36)] ${DIARY_CARD_ROTATE_CLASSES[index % DIARY_CARD_ROTATE_CLASSES.length]}`}
                 >
-                  <div className="relative aspect-[4/3] overflow-hidden">
+                  <div className="bg-paper-3 relative aspect-[4/5] overflow-hidden">
                     {diary.heroImageUrl ? (
                       <Image
                         src={diary.heroImageUrl}
@@ -615,44 +621,24 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
                         className={`absolute inset-0 transition-transform duration-500 group-hover:scale-[1.03] ${diary.placeholderClassName}`}
                       />
                     )}
-                    <div className="absolute inset-0 bg-linear-to-t from-black/72 via-black/10 to-transparent" />
-                    <div className="absolute right-4 bottom-4 left-4 text-[#fdf6e3]">
-                      <div className="font-mono text-[10px] tracking-[.14em] opacity-75">
-                        {diary.createdAtLabel}
-                      </div>
-                      <div className="font-display mt-1 flex items-center gap-2 text-[17px] tracking-[-0.01em]">
-                        <span>{diary.countryFlag}</span>
-                        <span>
-                          {diary.countryName} · {diary.city}
-                        </span>
-                      </div>
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(0,0,0,0.22))]" />
+                    <div className="absolute bottom-3 left-3 rounded-sm bg-black/30 px-2 py-1 font-mono text-[9px] tracking-[0.12em] text-white/75 uppercase">
+                      {diary.createdAtLabel}
                     </div>
                   </div>
 
-                  <div className="flex flex-1 flex-col p-5">
-                    <div className="mb-3 flex flex-wrap items-center gap-2">
-                      <span className="bg-ember/15 text-ember-2 rounded-full px-2.5 py-1 font-mono text-[10px] tracking-[.08em]">
-                        {diary.eraYear}
-                      </span>
-                      <span
-                        className={`rounded-full px-2.5 py-1 font-mono text-[10px] tracking-[.08em] ${
-                          diary.isPublic
-                            ? "bg-sage/14 text-sage"
-                            : "bg-ink/8 text-ink/60"
-                        }`}
-                      >
-                        {diary.isPublic ? "PUBLIC" : "PRIVATE"}
+                  <div className="px-2 pt-4 text-center">
+                    <div className="mb-2 flex items-center justify-center gap-2 font-mono text-[10px] tracking-[.1em] opacity-55">
+                      <span>{diary.countryFlag}</span>
+                      <span>
+                        {diary.countryName} · {diary.eraYear}
                       </span>
                     </div>
-                    <h3 className="font-display text-[24px] leading-[1.08] tracking-[-0.02em]">
+                    <h3 className="font-handwriting text-ink-2 line-clamp-2 text-[24px] leading-[1.05]">
                       {diary.title}
                     </h3>
-                    <p className="mt-3 line-clamp-3 text-[14px] leading-[1.65] opacity-70">
-                      {diary.excerpt}
-                    </p>
-                    <div className="border-ink/10 mt-auto flex items-center justify-between border-t pt-4 font-mono text-[11px] tracking-[.08em] opacity-60">
-                      <span>{diary.eraTitle}</span>
-                      <span>열기 →</span>
+                    <div className="mt-2 font-mono text-[9px] tracking-[.12em] opacity-42">
+                      {diary.isPublic ? "PUBLIC" : "PRIVATE"} · {diary.city}
                     </div>
                   </div>
                 </Link>
@@ -661,7 +647,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
           )}
 
           {diaryItems.length > 0 ? (
-            <div className="border-ink/12 mt-8 grid gap-3 rounded-[14px] border bg-paper-2/45 p-5 sm:grid-cols-3">
+            <div className="border-ink/12 bg-paper-2/45 mt-8 grid gap-3 rounded-[14px] border p-5 sm:grid-cols-3">
               {[
                 { label: "전체 기록", value: diaryItems.length },
                 { label: "공개 기록", value: publicCount },

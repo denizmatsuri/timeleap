@@ -1,37 +1,37 @@
 @import "tailwindcss";
 
 :root {
-  --paper:   #f1ead8;
+  --paper: #f1ead8;
   --paper-2: #e8dfc6;
   --paper-3: #ddd0ae;
-  --ink:     #1a1410;
-  --ink-2:   #3a2e20;
-  --ink-3:   #6b5842;
-  --night:   #0c0f1f;
-  --ember:   #c9944a;
+  --ink: #1a1410;
+  --ink-2: #3a2e20;
+  --ink-3: #6b5842;
+  --night: #0c0f1f;
+  --ember: #c9944a;
   --ember-2: #a87733;
-  --coral:   oklch(0.70 0.14 35);
-  --sage:    oklch(0.58 0.08 155);
-  --e-out:   cubic-bezier(.2,.8,.2,1);
+  --coral: oklch(0.7 0.14 35);
+  --sage: oklch(0.58 0.08 155);
+  --e-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 @theme inline {
-  --color-paper:   var(--paper);
+  --color-paper: var(--paper);
   --color-paper-2: var(--paper-2);
   --color-paper-3: var(--paper-3);
-  --color-ink:     var(--ink);
-  --color-ink-2:   var(--ink-2);
-  --color-ink-3:   var(--ink-3);
-  --color-night:   var(--night);
-  --color-ember:   var(--ember);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-night: var(--night);
+  --color-ember: var(--ember);
   --color-ember-2: var(--ember-2);
-  --color-coral:   oklch(0.70 0.14 35);
-  --color-sage:    oklch(0.58 0.08 155);
+  --color-coral: oklch(0.7 0.14 35);
+  --color-sage: oklch(0.58 0.08 155);
 
-  --font-sans:        var(--font-geist-sans);
-  --font-mono:        var(--font-geist-mono);
-  --font-display:     var(--font-fraunces);
-  --font-serif:       var(--font-instrument-serif);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-fraunces);
+  --font-serif: var(--font-instrument-serif);
   --font-handwriting: var(--font-caveat);
 }
 
@@ -47,12 +47,16 @@ body {
 /* Paper grain texture */
 .paper-grain {
   background-image:
-    radial-gradient(rgba(58,46,32,.06) 1px, transparent 1px),
-    radial-gradient(rgba(58,46,32,.04) 1px, transparent 1px);
-  background-size: 3px 3px, 7px 7px;
-  background-position: 0 0, 2px 3px;
+    radial-gradient(rgba(58, 46, 32, 0.06) 1px, transparent 1px),
+    radial-gradient(rgba(58, 46, 32, 0.04) 1px, transparent 1px);
+  background-size:
+    3px 3px,
+    7px 7px;
+  background-position:
+    0 0,
+    2px 3px;
   mix-blend-mode: multiply;
-  opacity: .55;
+  opacity: 0.55;
 }
 
 /* Brand clock mark */
@@ -64,20 +68,22 @@ body {
 }
 .brand-mark::before,
 .brand-mark::after {
-  content: '';
+  content: "";
   position: absolute;
   background: currentColor;
   top: 50%;
   left: 50%;
 }
 .brand-mark::before {
-  width: 10px; height: 1px;
-  transform: translate(-50%,-50%) rotate(-30deg);
+  width: 10px;
+  height: 1px;
+  transform: translate(-50%, -50%) rotate(-30deg);
   transform-origin: left center;
 }
 .brand-mark::after {
-  width: 7px; height: 1px;
-  transform: translate(-50%,-50%) rotate(60deg);
+  width: 7px;
+  height: 1px;
+  transform: translate(-50%, -50%) rotate(60deg);
   transform-origin: left center;
 }
 
@@ -89,7 +95,7 @@ body {
   padding: 6px 14px;
   font-family: var(--font-geist-mono), monospace;
   font-size: 10px;
-  letter-spacing: .15em;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
   font-weight: 500;
   border: 1.5px solid currentColor;
@@ -99,17 +105,21 @@ body {
 }
 .stamp::before,
 .stamp::after {
-  content: '';
+  content: "";
   position: absolute;
   border: 1.5px solid currentColor;
   inset: 2px;
-  opacity: .4;
+  opacity: 0.4;
 }
-.stamp-sage { color: var(--sage); }
+.stamp-sage {
+  color: var(--sage);
+}
 
 /* Hero title */
 .hero-title {
-  font-variation-settings: "opsz" 144, "SOFT" 40;
+  font-variation-settings:
+    "opsz" 144,
+    "SOFT" 40;
 }
 .hero-title em {
   font-family: var(--font-instrument-serif), serif;
@@ -125,7 +135,7 @@ body {
 }
 .ticket-notch::before,
 .ticket-notch::after {
-  content: '';
+  content: "";
   position: absolute;
   width: 28px;
   height: 28px;
@@ -135,42 +145,86 @@ body {
   transform: translateY(-50%);
   z-index: 10;
 }
-.ticket-notch::before { left: -14px; }
-.ticket-notch::after  { right: -14px; }
+.ticket-notch::before {
+  left: -14px;
+}
+.ticket-notch::after {
+  right: -14px;
+}
 
 /* Barcode pattern */
 .barcode-bg {
   background: repeating-linear-gradient(
     90deg,
-    var(--ink) 0px,   var(--ink) 2px,
-    transparent 2px,  transparent 5px,
-    var(--ink) 5px,   var(--ink) 6px,
-    transparent 6px,  transparent 10px,
-    var(--ink) 10px,  var(--ink) 12px,
-    transparent 12px, transparent 14px,
-    var(--ink) 14px,  var(--ink) 16px,
-    transparent 16px, transparent 21px,
-    var(--ink) 21px,  var(--ink) 23px,
-    transparent 23px, transparent 25px,
-    var(--ink) 25px,  var(--ink) 27px,
-    transparent 27px, transparent 28px
+    var(--ink) 0px,
+    var(--ink) 2px,
+    transparent 2px,
+    transparent 5px,
+    var(--ink) 5px,
+    var(--ink) 6px,
+    transparent 6px,
+    transparent 10px,
+    var(--ink) 10px,
+    var(--ink) 12px,
+    transparent 12px,
+    transparent 14px,
+    var(--ink) 14px,
+    var(--ink) 16px,
+    transparent 16px,
+    transparent 21px,
+    var(--ink) 21px,
+    var(--ink) 23px,
+    transparent 23px,
+    transparent 25px,
+    var(--ink) 25px,
+    var(--ink) 27px,
+    transparent 27px,
+    transparent 28px
   );
 }
 
 /* Era placeholder photo gradients */
-.ph-roaring  { background: linear-gradient(135deg, #2a1d3b, #4a2570, #c9944a); }
-.ph-fifties  { background: linear-gradient(135deg, #c0728c, #70c4c4); }
-.ph-sixties  { background: linear-gradient(135deg, #c4406b, #70a840); }
-.ph-disco    { background: linear-gradient(135deg, #4a2a5c, #c9944a); }
-.ph-wildwest { background: linear-gradient(135deg, #3a2e20, #c9944a); }
-.ph-eighties { background: linear-gradient(135deg, #d97fa0, #70c4c4); }
-.ph-noir     { background: linear-gradient(135deg, #1a1410, #6b5842); }
-.ph-nineties { background: linear-gradient(135deg, #3a4a48, #6b5842); }
-.ph-gilded   { background: linear-gradient(135deg, #3a2e20, #c9944a, #f1ead8); }
-.ph-ticket   { background: linear-gradient(135deg, #2a1d3b, #c9944a, #f4b860); }
+.ph-roaring {
+  background: linear-gradient(135deg, #2a1d3b, #4a2570, #c9944a);
+}
+.ph-fifties {
+  background: linear-gradient(135deg, #c0728c, #70c4c4);
+}
+.ph-sixties {
+  background: linear-gradient(135deg, #c4406b, #70a840);
+}
+.ph-disco {
+  background: linear-gradient(135deg, #4a2a5c, #c9944a);
+}
+.ph-wildwest {
+  background: linear-gradient(135deg, #3a2e20, #c9944a);
+}
+.ph-eighties {
+  background: linear-gradient(135deg, #d97fa0, #70c4c4);
+}
+.ph-noir {
+  background: linear-gradient(135deg, #1a1410, #6b5842);
+}
+.ph-nineties {
+  background: linear-gradient(135deg, #3a4a48, #6b5842);
+}
+.ph-gilded {
+  background: linear-gradient(135deg, #3a2e20, #c9944a, #f1ead8);
+}
+.ph-ticket {
+  background: linear-gradient(135deg, #2a1d3b, #c9944a, #f4b860);
+}
 
 @keyframes screen-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
-.screen-in { animation: screen-in .5s var(--e-out); }
+.screen-in {
+  animation: screen-in 0.5s var(--e-out);
+}
