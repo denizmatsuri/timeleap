@@ -2,7 +2,7 @@ import {
   DESTINATION_COUNTRIES,
   type DestinationCountry,
   type DestinationEra,
-} from "@/app/time-machine/_data/time-machine-destinations";
+} from "@/lib/time-machine/destinations";
 
 export const DEFAULT_DESTINATION_COUNTRY =
   DESTINATION_COUNTRIES.find((country) => country.code === "US") ??

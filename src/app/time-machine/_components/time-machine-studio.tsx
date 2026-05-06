@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   useEffect,
@@ -13,8 +12,8 @@ import {
   DESTINATION_COUNTRIES,
   type DestinationCountry,
   type DestinationEra,
-} from "@/app/time-machine/_data/time-machine-destinations";
-import styles from "./time-machine-studio.module.css";
+} from "@/lib/time-machine/destinations";
+import styles from "@/app/time-machine/_components/time-machine-studio.module.css";
 
 const CONTINENTS = [
   "M-145,55 L-130,62 L-125,65 L-110,68 L-95,65 L-85,55 L-80,40 L-75,28 L-82,18 L-95,15 L-105,20 L-115,30 L-125,40 L-140,45 Z",
@@ -91,10 +90,6 @@ type GlobeMarker = {
   scale: number;
 };
 
-export type TimeMachineStudioProps = {
-  showMyDiariesLink: boolean;
-};
-
 function parsePath(pathDefinition: string): Array<[number, number]> {
   const numbers = pathDefinition.match(/-?\d+(?:\.\d+)?/g) ?? [];
   const points: Array<[number, number]> = [];
@@ -152,9 +147,7 @@ function cn(...classNames: Array<string | false | null | undefined>) {
   return classNames.filter(Boolean).join(" ");
 }
 
-export default function TimeMachineStudio({
-  showMyDiariesLink,
-}: TimeMachineStudioProps) {
+export default function TimeMachineStudio() {
   const router = useRouter();
   const [selectedCountryCode, setSelectedCountryCode] = useState<
     DestinationCountry["code"]
@@ -437,335 +430,290 @@ export default function TimeMachineStudio({
   }, [rotateLng]);
 
   return (
-    <div className="bg-paper text-ink relative min-h-dvh overflow-x-hidden">
-      <div className="paper-grain pointer-events-none absolute inset-0 z-0" />
+    <div className={cn(styles.timeMachine, "screen-in relative z-10")}>
+      <div className={styles.tmCosmos}>
+        <div className={styles.tmCosmosGlow} />
+      </div>
 
-      <nav className="border-ink/12 bg-paper/80 sticky top-0 z-50 border-b backdrop-blur-md">
-        <div className="mx-auto flex max-w-300 items-center gap-6 px-6 py-3.5">
-          <Link
-            href="/"
-            className="font-display flex items-center gap-2.5 text-[22px] font-medium tracking-[-0.02em]"
+      <div className={styles.tmLayout}>
+        <section className={styles.tmGlobeWrap}>
+          <div className={styles.tmGlobeLabel}>
+            <span className={styles.tmLabelSmall}>SPATIAL</span>
+            <span className={styles.tmLabelBig}>어디로 갈까요</span>
+          </div>
+
+          <div
+            className={cn(
+              styles.tmGlobeStage,
+              isDragging && styles.tmGlobeStageDragging,
+            )}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
           >
-            <div className="brand-mark h-7.5 w-7.5" />
-            <div>
-              <div>TIMELEAP</div>
-              <div className="font-mono text-[9px] font-normal tracking-[.12em] uppercase opacity-55">
-                Archive of Impossible Days
+            <svg
+              width={SIZE}
+              height={SIZE}
+              viewBox={`0 0 ${SIZE} ${SIZE}`}
+              className={styles.globeSvg}
+              aria-label="회전하는 지구본"
+            >
+              <defs>
+                <radialGradient id="tm-sphere" cx="35%" cy="30%">
+                  <stop offset="0%" stopColor="#2d355e" />
+                  <stop offset="60%" stopColor="#151a33" />
+                  <stop offset="100%" stopColor="#0c0f1f" />
+                </radialGradient>
+                <radialGradient id="tm-glow">
+                  <stop offset="60%" stopColor="#c9944a" stopOpacity="0" />
+                  <stop offset="90%" stopColor="#c9944a" stopOpacity="0.25" />
+                  <stop offset="100%" stopColor="#c9944a" stopOpacity="0" />
+                </radialGradient>
+                <clipPath id="tm-sphere-clip">
+                  <circle cx={CENTER_X} cy={CENTER_Y} r={RADIUS} />
+                </clipPath>
+              </defs>
+
+              <circle
+                cx={CENTER_X}
+                cy={CENTER_Y}
+                r={RADIUS + 16}
+                fill="url(#tm-glow)"
+              />
+              <circle
+                cx={CENTER_X}
+                cy={CENTER_Y}
+                r={RADIUS}
+                fill="url(#tm-sphere)"
+                stroke="#c9944a"
+                strokeOpacity="0.4"
+                strokeWidth="0.8"
+              />
+
+              <g clipPath="url(#tm-sphere-clip)" opacity="0.22">
+                {globeGeometry.parallels.map((points, index) => (
+                  <polyline
+                    key={`parallel-${index}`}
+                    points={points.join(" ")}
+                    fill="none"
+                    stroke="#c9944a"
+                    strokeWidth="0.6"
+                  />
+                ))}
+                {globeGeometry.meridians.map((points, index) => (
+                  <polyline
+                    key={`meridian-${index}`}
+                    points={points.join(" ")}
+                    fill="none"
+                    stroke="#c9944a"
+                    strokeWidth="0.6"
+                  />
+                ))}
+              </g>
+
+              <g clipPath="url(#tm-sphere-clip)">
+                {globeGeometry.continents.map((path, index) => (
+                  <path
+                    key={`continent-${index}`}
+                    d={path}
+                    fill="#c9944a"
+                    fillOpacity="0.85"
+                    stroke="#e8c98a"
+                    strokeOpacity="0.5"
+                    strokeWidth="0.5"
+                  />
+                ))}
+              </g>
+
+              <g clipPath="url(#tm-sphere-clip)">
+                {globeGeometry.markers.map(({ country, point, scale }) => {
+                  const isSelected = selectedCountryCode === country.code;
+
+                  return (
+                    <g
+                      key={country.code}
+                      transform={`translate(${CENTER_X + point.x},${CENTER_Y - point.y})`}
+                      onClick={() => pickCountry(country.code)}
+                      className={styles.globeMarkerGroup}
+                    >
+                      {isSelected ? (
+                        <circle
+                          r={14 * scale}
+                          fill="none"
+                          stroke="#fdf6e3"
+                          strokeWidth="1.5"
+                          opacity="0.8"
+                        >
+                          <animate
+                            attributeName="r"
+                            from={8 * scale}
+                            to={24 * scale}
+                            dur="1.8s"
+                            repeatCount="indefinite"
+                          />
+                          <animate
+                            attributeName="opacity"
+                            from="0.8"
+                            to="0"
+                            dur="1.8s"
+                            repeatCount="indefinite"
+                          />
+                        </circle>
+                      ) : null}
+
+                      <circle
+                        r={(isSelected ? 6 : 4) * scale}
+                        className={styles.globeMarkerCore}
+                        fill={isSelected ? "#fdf6e3" : "#d97f5a"}
+                        stroke="#0c0f1f"
+                        strokeWidth="1"
+                      />
+
+                      {point.depth > 0.5 ? (
+                        <text
+                          x="10"
+                          y="4"
+                          opacity={isSelected ? "1" : "0.65"}
+                          className={styles.globeCode}
+                        >
+                          {country.code}
+                        </text>
+                      ) : null}
+
+                      <circle r="16" fill="transparent" />
+                    </g>
+                  );
+                })}
+              </g>
+
+              <circle
+                cx={CENTER_X}
+                cy={CENTER_Y}
+                r={RADIUS}
+                fill="none"
+                stroke="#0c0f1f"
+                strokeWidth="1"
+                opacity="0.8"
+              />
+              <ellipse
+                cx={CENTER_X + RADIUS * 0.25}
+                cy={CENTER_Y}
+                rx={RADIUS * 0.85}
+                ry={RADIUS}
+                fill="#0c0f1f"
+                opacity="0.18"
+                clipPath="url(#tm-sphere-clip)"
+              />
+            </svg>
+          </div>
+
+          <div className={styles.tmGlobeHint}>
+            🧭 드래그해서 지구를 돌리거나 점을 선택하세요
+          </div>
+
+          <div className={styles.countryPills}>
+            {DESTINATION_COUNTRIES.map((country) => (
+              <button
+                key={country.code}
+                type="button"
+                className={cn(
+                  styles.countryPill,
+                  selectedCountryCode === country.code &&
+                    styles.countryPillActive,
+                )}
+                onClick={() => pickCountry(country.code)}
+              >
+                <span>{country.flag}</span>
+                {country.name}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <aside className={styles.tmSide}>
+          <section className={styles.tmDestination}>
+            <div className={styles.tmDestLabel}>DESTINATION</div>
+            <div className={styles.tmDestBig}>
+              <div className={styles.tmDestYear}>{activeEra.year}</div>
+              <div className={styles.tmDestSlash}>/</div>
+              <div className={styles.tmDestCountry}>
+                <span className={styles.tmDestFlag}>{activeCountry.flag}</span>
+                <span>{activeCountry.name}</span>
               </div>
             </div>
-          </Link>
-          <div className="ml-auto flex items-center gap-2">
-            <Link
-              href="/"
-              className="rounded-full px-3.5 py-2 font-mono text-[11px] tracking-[.08em] uppercase opacity-55 transition-opacity hover:opacity-100"
-            >
-              Home
-            </Link>
-            {showMyDiariesLink ? (
-              <Link
-                href="/me"
-                className="rounded-full px-3.5 py-2 font-mono text-[11px] tracking-[.08em] uppercase opacity-70 transition-opacity hover:opacity-100"
-              >
-                내 일기장
-              </Link>
-            ) : null}
-            <Link
-              href="/onboarding"
-              className="bg-ink text-paper rounded-full px-4 py-2.5 font-sans text-[13px] font-medium transition-transform hover:-translate-y-px"
-            >
-              탑승 준비
-            </Link>
-          </div>
-        </div>
-      </nav>
+            <div className={styles.tmDestTitle}>
+              <span className={styles.tmDestEmoji}>{activeEraEmoji}</span>
+              {activeEra.title}
+            </div>
+            <div className={styles.tmDestBlurb}>{activeEra.blurb}</div>
+          </section>
 
-      <div className={cn(styles.timeMachine, "screen-in relative z-10")}>
-        <div className={styles.tmCosmos}>
-          <div className={styles.tmCosmosGlow} />
-        </div>
-
-        <div className={styles.tmLayout}>
-          <section className={styles.tmGlobeWrap}>
-            <div className={styles.tmGlobeLabel}>
-              <span className={styles.tmLabelSmall}>SPATIAL</span>
-              <span className={styles.tmLabelBig}>어디로 갈까요</span>
+          <section className={styles.tmTimeline}>
+            <div className={styles.tmLabelSmall}>TEMPORAL</div>
+            <div className={styles.tmLabelBig}>언제로 갈까요</div>
+            <div className={styles.timelineRailWrap}>
+              <div className={styles.timelineRail}>
+                {activeCountry.eras.map((era) => (
+                  <button
+                    key={era.id}
+                    type="button"
+                    className={cn(
+                      styles.railNode,
+                      era.id === activeEra.id && styles.railNodeActive,
+                    )}
+                    onClick={() => pickEra(era)}
+                  >
+                    <span className={styles.railDot} />
+                    <span className={styles.railYear}>{era.year}</span>
+                    <span className={styles.railEmoji}>
+                      {ERA_EMOJI_BY_ID[era.id] ?? "✦"}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div
-              className={cn(
-                styles.tmGlobeStage,
-                isDragging && styles.tmGlobeStageDragging,
-              )}
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerCancel={handlePointerUp}
-            >
-              <svg
-                width={SIZE}
-                height={SIZE}
-                viewBox={`0 0 ${SIZE} ${SIZE}`}
-                className={styles.globeSvg}
-                aria-label="회전하는 지구본"
-              >
-                <defs>
-                  <radialGradient id="tm-sphere" cx="35%" cy="30%">
-                    <stop offset="0%" stopColor="#2d355e" />
-                    <stop offset="60%" stopColor="#151a33" />
-                    <stop offset="100%" stopColor="#0c0f1f" />
-                  </radialGradient>
-                  <radialGradient id="tm-glow">
-                    <stop offset="60%" stopColor="#c9944a" stopOpacity="0" />
-                    <stop offset="90%" stopColor="#c9944a" stopOpacity="0.25" />
-                    <stop offset="100%" stopColor="#c9944a" stopOpacity="0" />
-                  </radialGradient>
-                  <clipPath id="tm-sphere-clip">
-                    <circle cx={CENTER_X} cy={CENTER_Y} r={RADIUS} />
-                  </clipPath>
-                </defs>
-
-                <circle
-                  cx={CENTER_X}
-                  cy={CENTER_Y}
-                  r={RADIUS + 16}
-                  fill="url(#tm-glow)"
-                />
-                <circle
-                  cx={CENTER_X}
-                  cy={CENTER_Y}
-                  r={RADIUS}
-                  fill="url(#tm-sphere)"
-                  stroke="#c9944a"
-                  strokeOpacity="0.4"
-                  strokeWidth="0.8"
-                />
-
-                <g clipPath="url(#tm-sphere-clip)" opacity="0.22">
-                  {globeGeometry.parallels.map((points, index) => (
-                    <polyline
-                      key={`parallel-${index}`}
-                      points={points.join(" ")}
-                      fill="none"
-                      stroke="#c9944a"
-                      strokeWidth="0.6"
-                    />
-                  ))}
-                  {globeGeometry.meridians.map((points, index) => (
-                    <polyline
-                      key={`meridian-${index}`}
-                      points={points.join(" ")}
-                      fill="none"
-                      stroke="#c9944a"
-                      strokeWidth="0.6"
-                    />
-                  ))}
-                </g>
-
-                <g clipPath="url(#tm-sphere-clip)">
-                  {globeGeometry.continents.map((path, index) => (
-                    <path
-                      key={`continent-${index}`}
-                      d={path}
-                      fill="#c9944a"
-                      fillOpacity="0.85"
-                      stroke="#e8c98a"
-                      strokeOpacity="0.5"
-                      strokeWidth="0.5"
-                    />
-                  ))}
-                </g>
-
-                <g clipPath="url(#tm-sphere-clip)">
-                  {globeGeometry.markers.map(({ country, point, scale }) => {
-                    const isSelected = selectedCountryCode === country.code;
-
-                    return (
-                      <g
-                        key={country.code}
-                        transform={`translate(${CENTER_X + point.x},${CENTER_Y - point.y})`}
-                        onClick={() => pickCountry(country.code)}
-                        className={styles.globeMarkerGroup}
-                      >
-                        {isSelected ? (
-                          <circle
-                            r={14 * scale}
-                            fill="none"
-                            stroke="#fdf6e3"
-                            strokeWidth="1.5"
-                            opacity="0.8"
-                          >
-                            <animate
-                              attributeName="r"
-                              from={8 * scale}
-                              to={24 * scale}
-                              dur="1.8s"
-                              repeatCount="indefinite"
-                            />
-                            <animate
-                              attributeName="opacity"
-                              from="0.8"
-                              to="0"
-                              dur="1.8s"
-                              repeatCount="indefinite"
-                            />
-                          </circle>
-                        ) : null}
-
-                        <circle
-                          r={(isSelected ? 6 : 4) * scale}
-                          className={styles.globeMarkerCore}
-                          fill={isSelected ? "#fdf6e3" : "#d97f5a"}
-                          stroke="#0c0f1f"
-                          strokeWidth="1"
-                        />
-
-                        {point.depth > 0.5 ? (
-                          <text
-                            x="10"
-                            y="4"
-                            opacity={isSelected ? "1" : "0.65"}
-                            className={styles.globeCode}
-                          >
-                            {country.code}
-                          </text>
-                        ) : null}
-
-                        <circle r="16" fill="transparent" />
-                      </g>
-                    );
-                  })}
-                </g>
-
-                <circle
-                  cx={CENTER_X}
-                  cy={CENTER_Y}
-                  r={RADIUS}
-                  fill="none"
-                  stroke="#0c0f1f"
-                  strokeWidth="1"
-                  opacity="0.8"
-                />
-                <ellipse
-                  cx={CENTER_X + RADIUS * 0.25}
-                  cy={CENTER_Y}
-                  rx={RADIUS * 0.85}
-                  ry={RADIUS}
-                  fill="#0c0f1f"
-                  opacity="0.18"
-                  clipPath="url(#tm-sphere-clip)"
-                />
-              </svg>
-            </div>
-
-            <div className={styles.tmGlobeHint}>
-              🧭 드래그해서 지구를 돌리거나 점을 선택하세요
-            </div>
-
-            <div className={styles.countryPills}>
-              {DESTINATION_COUNTRIES.map((country) => (
-                <button
-                  key={country.code}
-                  type="button"
-                  className={cn(
-                    styles.countryPill,
-                    selectedCountryCode === country.code &&
-                      styles.countryPillActive,
-                  )}
-                  onClick={() => pickCountry(country.code)}
-                >
-                  <span>{country.flag}</span>
-                  {country.name}
-                </button>
-              ))}
+            <div className={styles.eraDetailCard}>
+              <div className={styles.eraDetailHead}>
+                <div className={styles.eraDetailYear}>{activeEra.year}</div>
+                <div className={styles.eraDetailName}>{activeEra.title}</div>
+              </div>
+              <div className={styles.eraDetailBody}>{activeEra.headline}</div>
+              <div className={styles.eraDetailTags}>
+                <span className={styles.chip}>{activeCountry.name}</span>
+                <span className={styles.chip}>{activeEra.city}</span>
+                <span className={styles.chip}>{activeEra.mood}</span>
+              </div>
             </div>
           </section>
 
-          <aside className={styles.tmSide}>
-            <section className={styles.tmDestination}>
-              <div className={styles.tmDestLabel}>DESTINATION</div>
-              <div className={styles.tmDestBig}>
-                <div className={styles.tmDestYear}>{activeEra.year}</div>
-                <div className={styles.tmDestSlash}>/</div>
-                <div className={styles.tmDestCountry}>
-                  <span className={styles.tmDestFlag}>
-                    {activeCountry.flag}
-                  </span>
-                  <span>{activeCountry.name}</span>
-                </div>
-              </div>
-              <div className={styles.tmDestTitle}>
-                <span className={styles.tmDestEmoji}>{activeEraEmoji}</span>
-                {activeEra.title}
-              </div>
-              <div className={styles.tmDestBlurb}>{activeEra.blurb}</div>
-            </section>
+          <div className={styles.tmActions}>
+            <button
+              type="button"
+              className={styles.btnGhost}
+              onClick={randomize}
+            >
+              🎲 랜덤 좌표
+            </button>
+            <button
+              type="button"
+              className={styles.departBtn}
+              onClick={handleDepartTimeMachine}
+            >
+              ✦ 출발
+            </button>
+          </div>
 
-            <section className={styles.tmTimeline}>
-              <div className={styles.tmLabelSmall}>TEMPORAL</div>
-              <div className={styles.tmLabelBig}>언제로 갈까요</div>
-              <div className={styles.timelineRailWrap}>
-                <div className={styles.timelineRail}>
-                  {activeCountry.eras.map((era) => (
-                    <button
-                      key={era.id}
-                      type="button"
-                      className={cn(
-                        styles.railNode,
-                        era.id === activeEra.id && styles.railNodeActive,
-                      )}
-                      onClick={() => pickEra(era)}
-                    >
-                      <span className={styles.railDot} />
-                      <span className={styles.railYear}>{era.year}</span>
-                      <span className={styles.railEmoji}>
-                        {ERA_EMOJI_BY_ID[era.id] ?? "✦"}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className={styles.eraDetailCard}>
-                <div className={styles.eraDetailHead}>
-                  <div className={styles.eraDetailYear}>{activeEra.year}</div>
-                  <div className={styles.eraDetailName}>{activeEra.title}</div>
-                </div>
-                <div className={styles.eraDetailBody}>{activeEra.headline}</div>
-                <div className={styles.eraDetailTags}>
-                  <span className={styles.chip}>{activeCountry.name}</span>
-                  <span className={styles.chip}>{activeEra.city}</span>
-                  <span className={styles.chip}>{activeEra.mood}</span>
-                </div>
-              </div>
-            </section>
-
-            <div className={styles.tmActions}>
-              <button
-                type="button"
-                className={styles.btnGhost}
-                onClick={randomize}
-              >
-                🎲 랜덤 좌표
-              </button>
-              <button
-                type="button"
-                className={styles.departBtn}
-                onClick={handleDepartTimeMachine}
-              >
-                ✦ 출발
-              </button>
+          <div className={styles.tmMeta}>
+            <div>
+              예상 소요시간 · <strong>30–60초</strong>
             </div>
-
-            <div className={styles.tmMeta}>
-              <div>
-                예상 소요시간 · <strong>30–60초</strong>
-              </div>
-              <div>
-                결과물 · <strong>사진 + 일기</strong>
-              </div>
+            <div>
+              결과물 · <strong>사진 + 일기</strong>
             </div>
-          </aside>
-        </div>
+          </div>
+        </aside>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import DepartureScreen from "@/app/time-machine/result/_components/departure-screen";
-import type { DestinationCountry } from "@/app/time-machine/_data/time-machine-destinations";
+import type { DestinationCountry } from "@/lib/time-machine/destinations";
 import {
   readQueryValue,
   resolveDestinationSelection,

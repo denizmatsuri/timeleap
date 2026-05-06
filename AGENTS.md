@@ -23,8 +23,10 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **시크릿은 서버 전용.** `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY` 등은 클라이언트 번들에 들어가면 안 됨.
 - `NEXT_PUBLIC_*` 외 env 접근은 Server Component / Server Action / Route Handler에서만.
 - Supabase 모든 테이블에 **RLS 활성화**. 정책 없이 테이블 생성 금지. 유저 데이터는 `auth.uid()` 기반 정책으로.
-- Claude / Gemini 호출은 **서버 측 + Rate Limit 통과 후**에만. 클라이언트에서 직접 호출 금지.
-- AI 생성 결과는 **입력 해시로 DB 영구 캐싱.** 같은 입력으로 재생성 금지.
+- Claude / Gemini 호출은 **서버 측에서만** 수행. 클라이언트에서 직접 호출 금지.
+- AI 생성 중복 방지는 `generationRequestId`와 `generation_jobs` 기준으로 처리. 같은 `generationRequestId` 재시도는 기존 작업/결과로 수렴해야 함.
+- 같은 국가/시대/프로필/사진 입력이라도 사용자가 새 `generationRequestId`로 다시 출발하면 의도적 재생성으로 간주하고 새 AI 호출을 허용.
+- 생성 비용 방어가 필요해지면 입력 해시 캐시가 아니라 사용자별 quota / rate limit 정책으로 제어.
 - 프롬프트는 `src/lib/prompts/` 아래에만. 인라인 프롬프트 금지.
 
 ## 전역 금지
@@ -59,7 +61,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 - Next.js 16은 훈련 데이터와 다를 수 있음 — API 수정 전 `node_modules/next/dist/docs/` 관련 가이드 확인.
 - 새 테이블/컬럼 → RLS 정책도 같이 작성.
-- 새 외부 호출(AI, 외부 API) → Rate Limit 경로 통과하는지 확인.
+- 새 외부 호출(AI, 외부 API) → 서버 전용 경로인지, quota / rate limit 정책이 필요한지 확인.
 
 ## 커밋
 

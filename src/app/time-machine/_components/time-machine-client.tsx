@@ -2,10 +2,6 @@
 
 import dynamic from "next/dynamic";
 
-type TimeMachineClientProps = {
-  showMyDiariesLink: boolean;
-};
-
 const TimeMachineStudio = dynamic(
   () => import("@/app/time-machine/_components/time-machine-studio"),
   {
@@ -13,8 +9,6 @@ const TimeMachineStudio = dynamic(
   },
 );
 
-export default function TimeMachineClient({
-  showMyDiariesLink,
-}: TimeMachineClientProps) {
-  return <TimeMachineStudio showMyDiariesLink={showMyDiariesLink} />;
+export default function TimeMachineClient() {
+  return <TimeMachineStudio />;
 }

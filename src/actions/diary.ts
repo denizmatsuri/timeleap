@@ -14,17 +14,14 @@ import {
 import { createClient } from "@/lib/supabase/server";
 
 const MY_PAGE_PATH = "/me";
+const PUBLIC_DIARIES_PATH = "/diaries";
 
 type DiaryVisibilityResult = {
   isPublic: boolean;
 };
 
 function createDiaryPath(diaryId: string) {
-  return `/diary/${diaryId}`;
-}
-
-function createFeedPath(diaryId: string) {
-  return `/feed/${diaryId}`;
+  return `/diaries/${diaryId}`;
 }
 
 function readRequiredText(formData: FormData, key: string) {
@@ -67,8 +64,8 @@ async function requireDiaryActionUser(nextPath: string) {
 
 function revalidateDiarySurfaces(diaryId: string) {
   revalidatePath(MY_PAGE_PATH);
+  revalidatePath(PUBLIC_DIARIES_PATH);
   revalidatePath(createDiaryPath(diaryId));
-  revalidatePath(createFeedPath(diaryId));
   revalidateTag(PUBLIC_FEED_CACHE_TAG, "max");
   revalidateTag(createPublicDiaryCacheTag(diaryId), "max");
 }
