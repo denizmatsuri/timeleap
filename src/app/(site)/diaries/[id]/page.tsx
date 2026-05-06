@@ -7,10 +7,11 @@ import { resolveDestinationByDiary } from "@/lib/time-machine/destination";
 import { type EraTone } from "@/lib/time-machine/destinations";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = {
+const DEFAULT_DIARY_METADATA: Metadata = {
   title: "Diary — Timeleap",
   description: "AI가 생성하고 저장한 Timeleap 여행기 상세 페이지",
 };
+const METADATA_DESCRIPTION_LIMIT = 120;
 
 const HERO_PHOTO_BY_TONE: Record<EraTone, string> = {
   azure: "ph-fifties",
@@ -94,6 +95,93 @@ function buildFallbackBody({
   sceneTitle: string;
 }) {
   return `${eraYear}년 ${sceneTitle}의 공기 속에서 ${sceneNote}가 먼저 다가왔다. ${countryName}의 ${eraTitle}은 아주 짧은 순간이었지만 오래 남을 하루처럼 기록되었다.`;
+}
+
+function getSiteUrl() {
+  const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+
+  if (configuredSiteUrl) {
+    return configuredSiteUrl.replace(/\/+$/, "");
+  }
+
+  const vercelUrl = process.env.VERCEL_URL?.trim();
+
+  if (vercelUrl) {
+    return `https://${vercelUrl.replace(/\/+$/, "")}`;
+  }
+
+  return "http://localhost:3000";
+}
+
+function createMetadataDescription({
+  body,
+  fallback,
+}: {
+  body: string | null;
+  fallback: string;
+}) {
+  const normalizedBody = body?.replace(/\s+/g, " ").trim();
+
+  if (!normalizedBody) {
+    return fallback;
+  }
+
+  return normalizedBody.length > METADATA_DESCRIPTION_LIMIT
+    ? `${normalizedBody.slice(0, METADATA_DESCRIPTION_LIMIT)}...`
+    : normalizedBody;
+}
+
+export async function generateMetadata({
+  params,
+}: DiaryDetailPageProps): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+  const diary = await getDiaryById(supabase, id);
+
+  if (!diary || !diary.is_public) {
+    return DEFAULT_DIARY_METADATA;
+  }
+
+  const { country, era } = resolveDestinationByDiary({
+    countryCode: diary.country_code,
+    eraId: diary.era_id,
+  });
+  const title = diary.title?.trim() || era.sceneCards[0].title;
+  const description = createMetadataDescription({
+    body: diary.body,
+    fallback: `${country.name} ${era.title} 여행기`,
+  });
+  const siteUrl = getSiteUrl();
+  const diaryUrl = new URL(`/diaries/${id}`, siteUrl);
+  const ogImageUrl = new URL(`/api/og/${id}`, siteUrl);
+
+  return {
+    title: `${title} — Timeleap`,
+    description,
+    alternates: {
+      canonical: diaryUrl,
+    },
+    openGraph: {
+      title,
+      description,
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: `${title} Timeleap 공유 이미지`,
+        },
+      ],
+      type: "article",
+      url: diaryUrl,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImageUrl],
+    },
+  };
 }
 
 export default async function DiaryDetailPage({
