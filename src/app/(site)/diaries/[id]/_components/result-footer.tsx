@@ -22,7 +22,6 @@ export default function ResultFooter({
 }: ResultFooterProps) {
   const router = useRouter();
   const [isPublic, setIsPublic] = useState(initialIsPublic);
-  const [liked, setLiked] = useState(false);
   const [shareLabel, setShareLabel] = useState("↑ 공유");
   const [visibilityError, setVisibilityError] = useState<string | null>(null);
   const [isVisibilityPending, startVisibilityTransition] = useTransition();
@@ -31,7 +30,6 @@ export default function ResultFooter({
     ? "공개 갤러리에 노출됩니다."
     : "나만 볼 수 있습니다. 언제든 변경 가능해요.";
   const visibilityActionLabel = isVisibilityPending ? "저장 중" : "공개";
-  const likeLabel = liked ? "♥ 좋아요 표시됨" : "♡ 좋아요";
 
   function handleToggleVisibility() {
     const nextIsPublic = !isPublic;
@@ -144,21 +142,9 @@ export default function ResultFooter({
         <button
           type="button"
           onClick={() => {
-            setLiked((currentValue) => !currentValue);
-          }}
-          className={`cursor-pointer rounded-full px-4 py-3 font-mono text-[11px] tracking-[0.08em] uppercase transition-colors ${
-            liked
-              ? "bg-coral/12 text-coral"
-              : "bg-ink/8 hover:bg-ink/12 text-ink"
-          }`}
-        >
-          {likeLabel}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
             void handleShare();
           }}
+          aria-live="polite"
           className="bg-ink/8 text-ink hover:bg-ink/12 cursor-pointer rounded-full px-4 py-3 font-mono text-[11px] tracking-[0.08em] uppercase transition-colors"
         >
           {shareLabel}

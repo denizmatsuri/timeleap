@@ -75,11 +75,11 @@ export default async function PublicDiariesPage() {
     <main className="relative z-10 mx-auto max-w-300 px-6 py-12 lg:py-16">
       <section className="border-ink/12 mb-10 border-b pb-8">
         <span className="stamp">PUBLIC ARCHIVE</span>
-        <div className="mt-6 grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-end">
+        <div className="mt-6 gap-6">
           <h1 className="font-display text-[clamp(48px,7vw,92px)] leading-[0.9] font-light tracking-[-0.035em]">
-            공개된 시간 여행
+            둘러보기
           </h1>
-          <p className="max-w-xl text-[16px] leading-[1.7] opacity-65 lg:ml-auto">
+          <p className="mt-4 max-w-xl text-[16px] opacity-65">
             다른 여행자들이 공개한 시대와 장소의 기록을 최신순으로 모았습니다.
           </p>
         </div>
