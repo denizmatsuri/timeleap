@@ -85,6 +85,25 @@
   overflow: visible;
 }
 
+.globeCountryPath {
+  cursor: pointer;
+  fill-opacity: 0.08;
+  stroke-opacity: 0.32;
+  transition:
+    fill-opacity 0.2s ease,
+    stroke-opacity 0.2s ease;
+}
+
+.globeCountryPath:hover {
+  fill-opacity: 0.24;
+  stroke-opacity: 0.82;
+}
+
+.globeCountryPathActive {
+  fill-opacity: 0.32;
+  stroke-opacity: 0.95;
+}
+
 .globeMarkerGroup {
   cursor: pointer;
 }

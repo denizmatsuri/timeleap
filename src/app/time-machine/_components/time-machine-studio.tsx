@@ -1,13 +1,24 @@
 "use client";
 
+import { geoDistance, geoGraticule, geoOrthographic, geoPath } from "d3-geo";
 import { useRouter } from "next/navigation";
 import {
   useEffect,
   useMemo,
   useRef,
   useState,
+  type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
+import { feature, mesh } from "topojson-client";
+import type {
+  Feature,
+  FeatureCollection,
+  Geometry,
+  MultiLineString,
+} from "geojson";
+import type { GeometryCollection, Topology } from "topojson-specification";
+import worldTopologyJson from "world-atlas/countries-110m.json";
 import {
   DESTINATION_COUNTRIES,
   type DestinationCountry,
@@ -15,18 +26,6 @@ import {
 } from "@/lib/time-machine/destinations";
 import { resolveDestinationSelection } from "@/lib/time-machine/destination";
 import styles from "@/app/time-machine/_components/time-machine-studio.module.css";
-
-const CONTINENTS = [
-  "M-145,55 L-130,62 L-125,65 L-110,68 L-95,65 L-85,55 L-80,40 L-75,28 L-82,18 L-95,15 L-105,20 L-115,30 L-125,40 L-140,45 Z",
-  "M-75,-5 L-65,-10 L-55,-20 L-52,-35 L-58,-45 L-68,-48 L-75,-40 L-80,-25 L-82,-15 Z",
-  "M-5,55 L10,58 L25,55 L30,45 L25,40 L10,42 L0,48 Z",
-  "M-15,30 L5,32 L20,25 L30,10 L35,-10 L30,-28 L20,-35 L10,-30 L0,-15 L-10,0 L-15,15 Z",
-  "M35,55 L55,60 L80,58 L110,55 L130,48 L140,40 L130,30 L115,25 L100,30 L80,25 L60,35 L45,40 L35,45 Z",
-  "M60,25 L72,22 L78,15 L80,5 L75,0 L68,8 L62,18 Z",
-  "M95,0 L115,-2 L125,-8 L115,-12 L100,-10 Z",
-  "M115,-25 L140,-22 L148,-30 L142,-40 L125,-42 L115,-35 Z",
-  "M-45,70 L-30,75 L-20,72 L-25,62 L-40,60 Z",
-] as const;
 
 const COUNTRY_COORDINATES: Record<
   DestinationCountry["code"],
@@ -39,6 +38,15 @@ const COUNTRY_COORDINATES: Record<
   MX: { lat: 23, lng: -102 },
   US: { lat: 39, lng: -97 },
 };
+const COUNTRY_TOPOLOGY_ID_BY_CODE: Record<DestinationCountry["code"], string> =
+  {
+    FR: "250",
+    GB: "826",
+    JP: "392",
+    KR: "410",
+    MX: "484",
+    US: "840",
+  };
 
 const ERA_EMOJI_BY_ID: Record<string, string> = {
   "fr-belle-epoque": "🥂",
@@ -61,11 +69,6 @@ const ERA_EMOJI_BY_ID: Record<string, string> = {
   "us-harlem": "🎷",
 };
 
-const PARALLELS = [-60, -30, 0, 30, 60] as const;
-const MERIDIANS = [
-  -180, -150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150,
-] as const;
-
 const SIZE = 460;
 const CENTER_X = 230;
 const CENTER_Y = 230;
@@ -73,10 +76,41 @@ const RADIUS = 210;
 const ROTATE_LAT = 12;
 const AUTO_ROTATE_SPEED = 0.15;
 
-const CONTINENT_POINTS = CONTINENTS.map(parsePath);
 const INITIAL_COUNTRY =
   DESTINATION_COUNTRIES.find((country) => country.code === "US") ??
   DESTINATION_COUNTRIES[0];
+
+type WorldTopology = Topology<{
+  countries: GeometryCollection<{ name: string }>;
+  land: GeometryCollection;
+}>;
+
+const WORLD_TOPOLOGY = worldTopologyJson as WorldTopology;
+const WORLD_LAND = feature(
+  WORLD_TOPOLOGY,
+  WORLD_TOPOLOGY.objects.land,
+) as FeatureCollection<Geometry>;
+const WORLD_COUNTRY_BORDERS = mesh(
+  WORLD_TOPOLOGY,
+  WORLD_TOPOLOGY.objects.countries,
+  (firstCountry, secondCountry) => firstCountry !== secondCountry,
+) as MultiLineString;
+const WORLD_GRATICULE = geoGraticule().step([30, 30])();
+const DESTINATION_COUNTRY_FEATURES = DESTINATION_COUNTRIES.map((country) => {
+  const countryGeometry = WORLD_TOPOLOGY.objects.countries.geometries.find(
+    (geometry) =>
+      String(geometry.id) === COUNTRY_TOPOLOGY_ID_BY_CODE[country.code],
+  );
+
+  if (!countryGeometry) {
+    throw new Error(`Missing globe geometry for ${country.code}`);
+  }
+
+  return {
+    country,
+    feature: feature(WORLD_TOPOLOGY, countryGeometry) as Feature<Geometry>,
+  };
+});
 
 type ProjectedPoint = {
   depth: number;
@@ -95,43 +129,23 @@ type TimeMachineStudioProps = {
   initialEraId: string;
 };
 
-function parsePath(pathDefinition: string): Array<[number, number]> {
-  const numbers = pathDefinition.match(/-?\d+(?:\.\d+)?/g) ?? [];
-  const points: Array<[number, number]> = [];
+function getMarkerDepth({
+  lat,
+  lng,
+  rotateLng,
+}: {
+  lat: number;
+  lng: number;
+  rotateLng: number;
+}) {
+  const angularDistance = geoDistance([-rotateLng, ROTATE_LAT], [lng, lat]);
+  const depth = Math.cos(angularDistance);
 
-  for (let index = 0; index < numbers.length; index += 2) {
-    points.push([Number(numbers[index]), Number(numbers[index + 1])]);
-  }
-
-  return points;
-}
-
-function project(
-  lat: number,
-  lng: number,
-  rotateLng: number,
-  rotateLat = 0,
-  radius = 150,
-): ProjectedPoint | null {
-  const lambda = ((lng - rotateLng) * Math.PI) / 180;
-  const phi = (lat * Math.PI) / 180;
-  const phiZero = (rotateLat * Math.PI) / 180;
-  const cosC =
-    Math.sin(phiZero) * Math.sin(phi) +
-    Math.cos(phiZero) * Math.cos(phi) * Math.cos(lambda);
-
-  if (cosC < 0) {
+  if (depth <= 0) {
     return null;
   }
 
-  return {
-    depth: cosC,
-    x: radius * Math.cos(phi) * Math.sin(lambda),
-    y:
-      radius *
-      (Math.cos(phiZero) * Math.sin(phi) -
-        Math.sin(phiZero) * Math.cos(phi) * Math.cos(lambda)),
-  };
+  return depth;
 }
 
 function normalizeRotation(value: number) {
@@ -304,6 +318,14 @@ export default function TimeMachineStudio({
     setSelectedEraId(era.id);
   };
 
+  const handleCountryClick = (
+    event: ReactMouseEvent<SVGElement>,
+    countryCode: DestinationCountry["code"],
+  ) => {
+    event.stopPropagation();
+    pickCountry(countryCode);
+  };
+
   const nextPseudoRandom = () => {
     randomSeedRef.current =
       (randomSeedRef.current * 1664525 + 1013904223) % 4294967296;
@@ -365,74 +387,41 @@ export default function TimeMachineStudio({
   };
 
   const globeGeometry = useMemo(() => {
-    const parallels = PARALLELS.map((lat) => {
-      const points: string[] = [];
-
-      for (let lng = -180; lng <= 180; lng += 5) {
-        const projectedPoint = project(lat, lng, rotateLng, ROTATE_LAT, RADIUS);
-
-        if (projectedPoint) {
-          points.push(
-            `${CENTER_X + projectedPoint.x},${CENTER_Y - projectedPoint.y}`,
-          );
-        }
-      }
-
-      return points;
-    }).filter((points) => points.length > 1);
-
-    const meridians = MERIDIANS.map((lng) => {
-      const points: string[] = [];
-
-      for (let lat = -80; lat <= 80; lat += 5) {
-        const projectedPoint = project(lat, lng, rotateLng, ROTATE_LAT, RADIUS);
-
-        if (projectedPoint) {
-          points.push(
-            `${CENTER_X + projectedPoint.x},${CENTER_Y - projectedPoint.y}`,
-          );
-        }
-      }
-
-      return points;
-    }).filter((points) => points.length > 1);
-
-    const continents = CONTINENT_POINTS.map((continent) => {
-      const projectedPoints = continent
-        .map(([lng, lat]) => project(lat, lng, rotateLng, ROTATE_LAT, RADIUS))
-        .filter((point): point is ProjectedPoint => point !== null);
-
-      if (projectedPoints.length < 3) {
-        return null;
-      }
-
-      return `${projectedPoints
-        .map((point, index) => {
-          return `${index === 0 ? "M" : "L"}${CENTER_X + point.x},${CENTER_Y - point.y}`;
-        })
-        .join(" ")} Z`;
-    }).filter((path): path is string => path !== null);
+    const projection = geoOrthographic()
+      .scale(RADIUS)
+      .translate([CENTER_X, CENTER_Y])
+      .rotate([rotateLng, -ROTATE_LAT])
+      .clipAngle(90);
+    const path = geoPath(projection).digits(1);
 
     const markers: GlobeMarker[] = [];
 
     for (const country of DESTINATION_COUNTRIES) {
       const coordinates = COUNTRY_COORDINATES[country.code];
-      const projectedPoint = project(
-        coordinates.lat,
-        coordinates.lng,
+      const depth = getMarkerDepth({
+        lat: coordinates.lat,
+        lng: coordinates.lng,
         rotateLng,
-        ROTATE_LAT,
-        RADIUS,
-      );
+      });
 
-      if (!projectedPoint) {
+      if (depth === null) {
+        continue;
+      }
+
+      const point = projection([coordinates.lng, coordinates.lat]);
+
+      if (!point) {
         continue;
       }
 
       markers.push({
         country,
-        point: projectedPoint,
-        scale: 0.6 + projectedPoint.depth * 0.4,
+        point: {
+          depth,
+          x: point[0],
+          y: point[1],
+        },
+        scale: 0.6 + depth * 0.4,
       });
     }
 
@@ -440,7 +429,20 @@ export default function TimeMachineStudio({
       return firstMarker.point.depth - secondMarker.point.depth;
     });
 
-    return { continents, markers, meridians, parallels };
+    const destinationCountries = DESTINATION_COUNTRY_FEATURES.map(
+      ({ country, feature: countryFeature }) => ({
+        country,
+        path: path(countryFeature) ?? "",
+      }),
+    ).filter(({ path: countryPath }) => countryPath.length > 0);
+
+    return {
+      borderPath: path(WORLD_COUNTRY_BORDERS) ?? "",
+      destinationCountries,
+      graticulePath: path(WORLD_GRATICULE) ?? "",
+      landPath: path(WORLD_LAND) ?? "",
+      markers,
+    };
   }, [rotateLng]);
 
   return (
@@ -506,36 +508,44 @@ export default function TimeMachineStudio({
               />
 
               <g clipPath="url(#tm-sphere-clip)" opacity="0.22">
-                {globeGeometry.parallels.map((points, index) => (
-                  <polyline
-                    key={`parallel-${index}`}
-                    points={points.join(" ")}
-                    fill="none"
-                    stroke="#c9944a"
-                    strokeWidth="0.6"
-                  />
-                ))}
-                {globeGeometry.meridians.map((points, index) => (
-                  <polyline
-                    key={`meridian-${index}`}
-                    points={points.join(" ")}
-                    fill="none"
-                    stroke="#c9944a"
-                    strokeWidth="0.6"
-                  />
-                ))}
+                <path
+                  d={globeGeometry.graticulePath}
+                  fill="none"
+                  stroke="#c9944a"
+                  strokeWidth="0.6"
+                />
               </g>
 
               <g clipPath="url(#tm-sphere-clip)">
-                {globeGeometry.continents.map((path, index) => (
+                <path
+                  d={globeGeometry.landPath}
+                  fill="#c9944a"
+                  fillOpacity="0.82"
+                  stroke="#e8c98a"
+                  strokeOpacity="0.45"
+                  strokeWidth="0.5"
+                />
+                <path
+                  d={globeGeometry.borderPath}
+                  fill="none"
+                  stroke="#f2d79b"
+                  strokeOpacity="0.24"
+                  strokeWidth="0.45"
+                />
+                {globeGeometry.destinationCountries.map(({ country, path }) => (
                   <path
-                    key={`continent-${index}`}
+                    key={country.code}
                     d={path}
-                    fill="#c9944a"
-                    fillOpacity="0.85"
-                    stroke="#e8c98a"
-                    strokeOpacity="0.5"
-                    strokeWidth="0.5"
+                    className={cn(
+                      styles.globeCountryPath,
+                      selectedCountryCode === country.code &&
+                        styles.globeCountryPathActive,
+                    )}
+                    fill="#fdf6e3"
+                    stroke="#fdf6e3"
+                    strokeWidth="0.9"
+                    onClick={(event) => handleCountryClick(event, country.code)}
+                    onPointerDown={(event) => event.stopPropagation()}
                   />
                 ))}
               </g>
@@ -547,8 +557,9 @@ export default function TimeMachineStudio({
                   return (
                     <g
                       key={country.code}
-                      transform={`translate(${CENTER_X + point.x},${CENTER_Y - point.y})`}
-                      onClick={() => pickCountry(country.code)}
+                      transform={`translate(${point.x},${point.y})`}
+                      onClick={(event) => handleCountryClick(event, country.code)}
+                      onPointerDown={(event) => event.stopPropagation()}
                       className={styles.globeMarkerGroup}
                     >
                       {isSelected ? (
@@ -623,7 +634,7 @@ export default function TimeMachineStudio({
           </div>
 
           <div className={styles.tmGlobeHint}>
-            🧭 드래그해서 지구를 돌리거나 점을 선택하세요
+            🧭 드래그해서 지구를 돌리거나 나라를 선택하세요
           </div>
 
           <div className={styles.countryPills}>
