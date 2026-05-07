@@ -621,15 +621,6 @@ export default function TimeMachineStudio({
                 strokeWidth="1"
                 opacity="0.8"
               />
-              <ellipse
-                cx={CENTER_X + RADIUS * 0.25}
-                cy={CENTER_Y}
-                rx={RADIUS * 0.85}
-                ry={RADIUS}
-                fill="#0c0f1f"
-                opacity="0.18"
-                clipPath="url(#tm-sphere-clip)"
-              />
             </svg>
           </div>
 
