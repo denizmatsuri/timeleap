@@ -230,3 +230,39 @@ body {
 .screen-in {
   animation: screen-in 0.5s var(--e-out);
 }
+
+@keyframes archive-marquee-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes archive-marquee-right {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.archive-marquee-track-left {
+  animation: archive-marquee-left 38s linear infinite;
+}
+
+.archive-marquee-track-right {
+  animation: archive-marquee-right 44s linear infinite;
+}
+
+.archive-marquee:hover .archive-marquee-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .archive-marquee-track {
+    animation: none;
+  }
+}

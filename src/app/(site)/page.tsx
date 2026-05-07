@@ -1,157 +1,45 @@
+import Image from "next/image";
 import Link from "next/link";
+import type { Metadata } from "next";
+import type { User } from "@supabase/supabase-js";
+import {
+  createDiaryHeroImageUrlOrNull,
+  getPublicDiaries,
+} from "@/lib/diaries/server";
+import { createClient } from "@/lib/supabase/server";
+import { resolveDestinationByDiary } from "@/lib/time-machine/destination";
+import {
+  DESTINATION_COUNTRIES,
+  type EraTone,
+} from "@/lib/time-machine/destinations";
+import type { Tables } from "@/types/database.types";
 
-const ERAS = [
-  {
-    id: "wildwest",
-    label: "1880s",
-    title: "개척 시대",
-    emoji: "🤠",
-    blurb: "먼지 날리는 서부, 총잡이와 철도",
-  },
-  {
-    id: "gilded",
-    label: "1890s",
-    title: "길디드 에이지",
-    emoji: "🎩",
-    blurb: "석유 왕과 철강 재벌의 황금기",
-  },
-  {
-    id: "roaring",
-    label: "1920s",
-    title: "광란의 20년대",
-    emoji: "🥂",
-    blurb: "재즈와 플래퍼, 금주법의 뉴욕",
-  },
-  {
-    id: "noir",
-    label: "1940s",
-    title: "느와르 시대",
-    emoji: "🎞️",
-    blurb: "트렌치코트와 담배 연기, 필름 누아르",
-  },
-  {
-    id: "fifties",
-    label: "1950s",
-    title: "로큰롤 캘리포니아",
-    emoji: "🚗",
-    blurb: "엘비스와 드라이브인, 핑크 캐딜락",
-  },
-  {
-    id: "sixties",
-    label: "1960s",
-    title: "히피 샌프란시스코",
-    emoji: "🌻",
-    blurb: "사랑과 평화, 헤이트-애쉬베리",
-  },
-  {
-    id: "disco",
-    label: "1970s",
-    title: "디스코 뉴욕",
-    emoji: "🪩",
-    blurb: "스튜디오 54, 반짝이와 비트",
-  },
-  {
-    id: "eighties",
-    label: "1980s",
-    title: "네온 마이애미",
-    emoji: "📻",
-    blurb: "파스텔 수트, 네온 사인, 신스팝",
-  },
-  {
-    id: "nineties",
-    label: "1990s",
-    title: "그런지 시애틀",
-    emoji: "🎸",
-    blurb: "플란넬, 커피 문화, 얼터너티브",
-  },
-];
+export const metadata: Metadata = {
+  title: "Timeleap — Impossible Days",
+  description:
+    "얼굴 사진으로 시대와 국가를 선택해 AI 사진과 일기를 생성하는 서비스입니다.",
+};
 
-const FEED = [
-  {
-    id: "f001",
-    author: "지민",
-    initial: "J",
-    eraLabel: "1920s",
-    city: "뉴욕",
-    date: "1925.04.18",
-    title: "재즈가 흐르는 비밀 클럽의 밤",
-    excerpt:
-      '브라운스톤 지하에 숨겨진 문을 두드렸다. 암호는 "sparrow." 문이 열리자 색소폰이 쏟아져 나왔다—',
-    ph: "ph-roaring",
-    likes: 1284,
-    large: true,
-  },
-  {
-    id: "f002",
-    author: "서연",
-    initial: "S",
-    eraLabel: "1950s",
-    city: "로스앤젤레스",
-    date: "1956.07.22",
-    title: "핑크 캐딜락을 타고 해변으로",
-    excerpt:
-      "머리에 스카프를 묶고 선글라스를 썼다. 라디오에선 엘비스가 흘러나오고—",
-    ph: "ph-fifties",
-    likes: 2103,
-    large: false,
-  },
-  {
-    id: "f003",
-    author: "현우",
-    initial: "H",
-    eraLabel: "1960s",
-    city: "샌프란시스코",
-    date: "1968.08.03",
-    title: "헤이트-애쉬베리, 기타와 꽃",
-    excerpt:
-      "골든게이트 파크에서 누군가 기타를 치고 있었다. 머리에 꽃을 꽂은 사람들이 모여들었다—",
-    ph: "ph-sixties",
-    likes: 892,
-    large: false,
-  },
-  {
-    id: "f004",
-    author: "민지",
-    initial: "M",
-    eraLabel: "1970s",
-    city: "뉴욕",
-    date: "1977.11.12",
-    title: "스튜디오 54, 자정의 반짝임",
-    excerpt:
-      "문 앞 줄은 끝이 없었지만, 빨간 벨벳 로프가 걷혔다. 안쪽은 다른 행성이었다—",
-    ph: "ph-disco",
-    likes: 3421,
-    large: false,
-  },
-  {
-    id: "f005",
-    author: "태훈",
-    initial: "T",
-    eraLabel: "1880s",
-    city: "텍사스",
-    date: "1882.03.15",
-    title: "먼지와 말발굽, 국경의 바람",
-    excerpt:
-      "살룬 문을 밀고 들어갔을 때, 피아노 소리가 멈췄다. 바텐더가 위스키 한 잔을 따르며—",
-    ph: "ph-wildwest",
-    likes: 654,
-    large: false,
-  },
-  {
-    id: "f006",
-    author: "수아",
-    initial: "S",
-    eraLabel: "1980s",
-    city: "마이애미",
-    date: "1985.06.28",
-    title: "네온 사인 아래 롤러스케이트",
-    excerpt:
-      "오션 드라이브의 파스텔 빌딩들이 해질녘 분홍으로 물들었다. 워크맨에서 신스팝이—",
-    ph: "ph-eighties",
-    likes: 1876,
-    large: false,
-  },
-] as const;
+const LANDING_PUBLIC_DIARY_LIMIT = 12;
+const DESTINATION_CARD_LIMIT = 9;
+const HERO_PHOTO_BY_TONE: Record<EraTone, string> = {
+  azure: "ph-fifties",
+  champagne: "ph-gilded",
+  chrome: "ph-eighties",
+  cobalt: "ph-ticket",
+  disco: "ph-disco",
+  electric: "ph-eighties",
+  ember: "ph-wildwest",
+  fiesta: "ph-fifties",
+  fog: "ph-noir",
+  indigo: "ph-ticket",
+  mod: "ph-sixties",
+  noir: "ph-noir",
+  pastel: "ph-fifties",
+  punk: "ph-roaring",
+  sepia: "ph-gilded",
+};
+type LandingProfile = Pick<Tables<"profiles">, "onboarding_completed_at">;
 
 const HOW = [
   {
@@ -176,13 +64,140 @@ const HOW = [
   },
 ];
 
-export default function Home() {
+function getLandingAction({
+  authUser,
+  profile,
+}: {
+  authUser: User | null;
+  profile: LandingProfile | null;
+}) {
+  if (!authUser) {
+    return {
+      footerLabel: "무료로 시작하기",
+      heroLabel: "타임머신 타러 가기",
+      href: "/login",
+    };
+  }
+
+  if (!profile?.onboarding_completed_at) {
+    return {
+      footerLabel: "탑승 준비하기",
+      heroLabel: "탑승 준비하기",
+      href: "/onboarding",
+    };
+  }
+
+  return {
+    footerLabel: "새 여행 시작하기",
+    heroLabel: "타임머신 출발하기",
+    href: "/time-machine",
+  };
+}
+
+function createDestinationCards() {
+  const primaryDestinationCards = DESTINATION_COUNTRIES.map((country) => ({
+    blurb: country.eras[0].blurb,
+    city: country.eras[0].city,
+    countryFlag: country.flag,
+    countryName: country.name,
+    id: `${country.code}-${country.eras[0].id}`,
+    label: country.eras[0].year,
+    title: country.eras[0].title,
+  }));
+  const secondaryDestinationCards = DESTINATION_COUNTRIES.flatMap((country) =>
+    country.eras.slice(1).map((era) => ({
+      blurb: era.blurb,
+      city: era.city,
+      countryFlag: country.flag,
+      countryName: country.name,
+      id: `${country.code}-${era.id}`,
+      label: era.year,
+      title: era.title,
+    })),
+  );
+
+  return [...primaryDestinationCards, ...secondaryDestinationCards].slice(
+    0,
+    DESTINATION_CARD_LIMIT,
+  );
+}
+
+function createLoopedCards<T>(cards: T[]) {
+  if (cards.length === 0) {
+    return [];
+  }
+
+  const repeatCount = Math.max(1, Math.ceil(12 / cards.length));
+  const repeatedCards = Array.from({ length: repeatCount }, () => cards).flat();
+
+  return [...repeatedCards, ...repeatedCards];
+}
+
+export default async function Home() {
+  const supabase = await createClient();
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+  let profile: LandingProfile | null = null;
+
+  if (authUser) {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("onboarding_completed_at")
+      .eq("id", authUser.id)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(`프로필 조회에 실패했습니다. ${error.message}`);
+    }
+
+    profile = data;
+  }
+
+  const landingAction = getLandingAction({ authUser, profile });
+  const publicDiaries = await getPublicDiaries(
+    supabase,
+    LANDING_PUBLIC_DIARY_LIMIT,
+  );
+  const diaryCards = await Promise.all(
+    publicDiaries.map(async (diary) => {
+      const { country, era } = resolveDestinationByDiary({
+        countryCode: diary.country_code,
+        eraId: diary.era_id,
+      });
+
+      return {
+        city: era.city,
+        countryFlag: country.flag,
+        countryName: country.name,
+        eraTitle: era.title,
+        eraYear: era.year,
+        heroImageUrl: await createDiaryHeroImageUrlOrNull(
+          supabase,
+          diary.hero_image_path,
+        ),
+        id: diary.id,
+        placeholderClassName: HERO_PHOTO_BY_TONE[era.tone],
+        title: diary.title?.trim() || era.sceneCards[0].title,
+      };
+    }),
+  );
+  const destinationCards = createDestinationCards();
+  const shiftedDiaryCards = [
+    ...diaryCards.slice(Math.ceil(diaryCards.length / 2)),
+    ...diaryCards.slice(0, Math.ceil(diaryCards.length / 2)),
+  ];
+  const scrollingDiaryCards = createLoopedCards(diaryCards);
+  const alternateScrollingDiaryCards = createLoopedCards(shiftedDiaryCards);
+  const totalEraCount = DESTINATION_COUNTRIES.reduce(
+    (count, country) => count + country.eras.length,
+    0,
+  );
+
   return (
     <>
-      {/* ── Hero ── */}
       <section className="overflow-hidden py-16 md:py-15 md:pb-25">
         <div className="mx-auto grid max-w-300 items-center gap-16 px-8 md:grid-cols-[1.1fr_1fr]">
-          {/* Left */}
           <div>
             <div className="mb-5">
               <span className="stamp">
@@ -203,23 +218,23 @@ export default function Home() {
             </p>
             <div className="mb-11 flex flex-wrap gap-3">
               <Link
-                href="/login"
+                href={landingAction.href}
                 className="bg-ink text-paper font-display inline-flex items-center gap-2 rounded-full px-7 py-4 text-[15px] font-medium tracking-[-0.01em] whitespace-nowrap shadow-[0_2px_0_rgba(0,0,0,.1),0_10px_30px_-10px_rgba(0,0,0,.4)] transition-transform hover:-translate-y-0.5"
               >
-                ✦ 타임머신 타러 가기
+                {landingAction.heroLabel}
               </Link>
               <Link
                 href="/diaries"
                 className="bg-ink/8 hover:bg-ink/14 font-display inline-flex items-center gap-2 rounded-full px-7 py-4 text-[15px] font-medium tracking-[-0.01em] whitespace-nowrap transition-all hover:-translate-y-0.5"
               >
-                공개 여행기 보기 →
+                공개 여행기 보기
               </Link>
             </div>
             <div className="border-ink/12 flex flex-wrap gap-9 border-t pt-5">
               {[
-                { v: "12,482", l: "발행된 여행기" },
-                { v: "89", l: "시대 · 나라" },
-                { v: "Google 로그인", l: "1분 안에 시작" },
+                { v: String(diaryCards.length), l: "최신 공개 샘플" },
+                { v: String(totalEraCount), l: "시대 좌표" },
+                { v: String(DESTINATION_COUNTRIES.length), l: "국가" },
               ].map(({ v, l }) => (
                 <div key={l} className="flex flex-col gap-0.5">
                   <strong className="font-display text-[22px] font-medium tracking-[-0.02em]">
@@ -233,14 +248,10 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right: Ticket */}
-          {/* TODO: 스와이핑 기능 추가 */}
           <div className="relative flex justify-center">
             <div className="bg-paper text-ink ticket-notch relative w-full max-w-105 -rotate-3 rounded-md shadow-[0_20px_50px_-20px_rgba(0,0,0,.5),0_4px_12px_rgba(0,0,0,.15)]">
-              {/* Top bar */}
               <div className="border-ink-3 flex items-center gap-3.5 border-b border-dashed px-5.5 py-4">
                 <div className="flex flex-1 items-center gap-2.5">
-                  {/* <div className="brand-mark w-6.5 h-6.5" /> */}
                   <div>
                     <div className="font-display text-sm font-medium">
                       TIMELEAP
@@ -256,9 +267,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Body */}
               <div className="p-5.5">
-                {/* FROM → TO */}
                 <div className="flex items-end justify-between gap-3.5">
                   <div>
                     <div className="mb-1 font-mono text-[9px] tracking-[.15em] uppercase opacity-55">
@@ -285,10 +294,8 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Photo strip */}
                 <div className="ph-ticket relative my-4 aspect-2/1 overflow-hidden rounded-sm" />
 
-                {/* Passenger info */}
                 <div className="flex justify-between gap-5">
                   {[
                     ["PASSENGER", "JIMIN · P"],
@@ -307,13 +314,11 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Barcode */}
               <div className="border-ink-3 border-t border-dashed px-5.5 pt-3 pb-4">
                 <div className="barcode-bg h-5 rounded-sm opacity-75" />
               </div>
             </div>
 
-            {/* Floating stamps */}
             <div className="pointer-events-none absolute top-0 -right-2 rotate-12">
               <span className="stamp">DEPARTED</span>
             </div>
@@ -324,7 +329,139 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── How It Works ── */}
+      <section className="py-20">
+        <div className="mx-auto max-w-300 px-6">
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <div className="mb-2.5 font-mono text-[11px] tracking-[.15em] uppercase opacity-55">
+                PUBLIC ARCHIVE
+              </div>
+              <h2 className="font-display m-0 text-[clamp(32px,4vw,52px)] leading-[1.05] font-normal tracking-[-0.02em]">
+                다른 사람들의 불가능한 하루
+              </h2>
+            </div>
+            <Link
+              href="/diaries"
+              className="bg-ink/8 hover:bg-ink/14 self-start rounded-full px-3 py-1.5 font-mono text-xs tracking-[.06em] whitespace-nowrap uppercase transition-colors sm:self-auto"
+            >
+              전체 보기
+            </Link>
+          </div>
+
+          {diaryCards.length > 0 ? (
+            <div className="archive-marquee -mx-6 space-y-4 overflow-hidden [mask-image:linear-gradient(90deg,transparent,black_8%,black_92%,transparent)] py-2">
+              {[
+                {
+                  animationClassName: "archive-marquee-track-left",
+                  cards: scrollingDiaryCards,
+                },
+                {
+                  animationClassName: "archive-marquee-track-right",
+                  cards: alternateScrollingDiaryCards,
+                },
+              ].map((row, rowIndex) => (
+                <div
+                  key={row.animationClassName}
+                  className={`archive-marquee-track flex w-max gap-3 px-6 sm:gap-4 ${row.animationClassName}`}
+                >
+                  {row.cards.map((diary, index) => (
+                    <Link
+                      key={`${rowIndex}-${index}-${diary.id}`}
+                      href={`/diaries/${diary.id}`}
+                      className="group bg-paper-3 relative block w-[136px] shrink-0 overflow-hidden rounded-[10px] shadow-[0_18px_44px_-28px_rgba(0,0,0,.46)] transition-transform duration-300 hover:-translate-y-1 sm:w-[156px] lg:w-[176px]"
+                    >
+                      <div className="relative aspect-[4/5] overflow-hidden">
+                        {diary.heroImageUrl ? (
+                          <Image
+                            src={diary.heroImageUrl}
+                            alt={`${diary.countryName} ${diary.eraTitle} 여행 이미지`}
+                            fill
+                            sizes="(min-width: 1024px) 176px, (min-width: 640px) 156px, 136px"
+                            className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                          />
+                        ) : (
+                          <div
+                            className={`absolute inset-0 transition-transform duration-500 group-hover:scale-[1.04] ${diary.placeholderClassName}`}
+                          />
+                        )}
+                        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.12),transparent_36%,rgba(0,0,0,0.62))]" />
+                        <div className="absolute top-2 right-2 flex max-w-[76%] items-center gap-1.5 rounded-full border border-white/35 bg-black/32 px-2 py-1 text-white shadow-[0_8px_22px_-12px_rgba(0,0,0,.8)] backdrop-blur-[2px] sm:top-3 sm:right-3">
+                          <span className="text-[14px] sm:text-[16px]">
+                            {diary.countryFlag}
+                          </span>
+                          <span className="truncate font-mono text-[8px] tracking-[.08em] uppercase sm:text-[9px]">
+                            {diary.countryName}
+                          </span>
+                        </div>
+                        <div className="absolute inset-x-0 bottom-0 p-3 text-white sm:p-3.5">
+                          <div className="font-mono text-[8px] tracking-[.1em] text-white/62 uppercase sm:text-[9px]">
+                            {diary.eraYear} · {diary.city}
+                          </div>
+                          <h3 className="font-display mt-1 line-clamp-2 text-[17px] leading-[1.02] tracking-[-0.01em] sm:text-[19px]">
+                            {diary.title}
+                          </h3>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="border-ink/12 bg-paper-2/55 rounded-[14px] border px-6 py-14 text-center">
+              <p className="font-display text-[30px]">
+                아직 공개된 여행기가 없습니다
+              </p>
+              <p className="mt-3 text-[14px] opacity-60">
+                첫 공개 기록이 생기면 이곳에서 바로 둘러볼 수 있습니다.
+              </p>
+              <Link
+                href="/diaries"
+                className="bg-ink text-paper mt-7 inline-flex rounded-full px-5 py-3 font-mono text-[11px] tracking-[.08em] uppercase transition-transform hover:-translate-y-0.5"
+              >
+                공개 아카이브로 이동
+              </Link>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="py-20">
+        <div className="mx-auto max-w-300 px-6">
+          <div className="mb-2.5 font-mono text-[11px] tracking-[.15em] uppercase opacity-55">
+            DESTINATIONS
+          </div>
+          <h2 className="font-display mb-11 text-[clamp(32px,4vw,52px)] leading-[1.05] font-normal tracking-[-0.02em]">
+            어느 시대로 떠나 볼까요
+          </h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-[repeat(auto-fill,minmax(200px,1fr))]">
+            {destinationCards.map((destination) => (
+              <Link
+                key={destination.id}
+                href={landingAction.href}
+                className="border-ink/14 bg-ink/3 hover:bg-ember/8 hover:border-ember/30 rounded-xl border p-5 text-left transition-all duration-300 hover:-translate-y-0.5"
+              >
+                <div className="mb-2.5 flex items-center justify-between gap-3">
+                  <span className="text-[26px]">{destination.countryFlag}</span>
+                  <span className="font-mono text-[11px] tracking-[.12em] opacity-60">
+                    {destination.label}
+                  </span>
+                </div>
+                <div className="font-display mb-1.5 text-[19px] font-medium tracking-[-0.01em]">
+                  {destination.title}
+                </div>
+                <div className="mb-2 font-mono text-[10px] tracking-[.08em] uppercase opacity-50">
+                  {destination.countryName} · {destination.city}
+                </div>
+                <div className="line-clamp-3 text-xs leading-[1.4] opacity-70">
+                  {destination.blurb}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="py-20">
         <div className="mx-auto max-w-300 px-6">
           <div className="mb-10 font-mono text-[11px] tracking-[.15em] uppercase opacity-55">
@@ -349,132 +486,16 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Gallery Peek ── */}
-      <section className="py-20">
-        <div className="mx-auto max-w-300 px-6">
-          <div className="mb-8 flex items-end justify-between">
-            <div>
-              <div className="mb-2.5 font-mono text-[11px] tracking-[.15em] uppercase opacity-55">
-                PUBLIC ARCHIVE
-              </div>
-              <h2 className="font-display m-0 text-[clamp(32px,4vw,52px)] leading-[1.05] font-normal tracking-[-0.02em]">
-                다른 사람들의 불가능한 하루
-              </h2>
-            </div>
-            <Link
-              href="/diaries"
-              className="bg-ink/8 hover:bg-ink/14 rounded-full px-3 py-1.5 font-mono text-xs tracking-[.06em] whitespace-nowrap uppercase transition-colors"
-            >
-              전체 보기 →
-            </Link>
-          </div>
-
-          <div className="grid auto-rows-auto grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {FEED.map((f, i) => (
-              <Link
-                key={f.id}
-                href={`/diaries/${f.id}`}
-                className={[
-                  "group bg-ink/4 border-ink/12 overflow-hidden rounded-[10px] border",
-                  "flex flex-col transition-all duration-300",
-                  "hover:-translate-y-0.5 hover:shadow-[0_12px_30px_-15px_rgba(0,0,0,.4)]",
-                  i === 0 ? "lg:col-span-2 lg:row-span-2" : "",
-                ].join(" ")}
-              >
-                {/* Photo area */}
-                <div
-                  className={`relative overflow-hidden ${i === 0 ? "aspect-16/11" : "aspect-4/3"}`}
-                >
-                  <div className={`absolute inset-0 ${f.ph}`} />
-                  <div className="absolute inset-0 bg-linear-to-t from-black/70 to-transparent" />
-                  <div className="absolute right-0 bottom-0 left-0 p-4 text-[#fdf6e3]">
-                    <div className="font-mono text-[10px] tracking-widest opacity-70">
-                      {f.date}
-                    </div>
-                    <div
-                      className={`font-display mt-0.5 flex items-center gap-1.5 font-medium ${i === 0 ? "text-[15px]" : "text-sm"}`}
-                    >
-                      📍 {f.city}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Card body */}
-                <div className="flex flex-1 flex-col gap-2.5 p-5">
-                  <span className="bg-ember/15 text-ember-2 self-start rounded-full px-2.5 py-1 font-mono text-[10px] tracking-[.08em] uppercase">
-                    {f.eraLabel}
-                  </span>
-                  <p
-                    className={`font-display m-0 leading-tight font-medium tracking-[-0.01em] ${i === 0 ? "text-[26px]" : "text-[19px]"}`}
-                  >
-                    {f.title}
-                  </p>
-                  <p
-                    className={`m-0 text-sm leading-[1.55] opacity-70 ${i === 0 ? "line-clamp-3" : "line-clamp-2"}`}
-                  >
-                    {f.excerpt}
-                  </p>
-                  <div className="border-ink/10 mt-auto flex items-center justify-between border-t pt-2.5 font-mono text-[11px]">
-                    <div className="flex items-center gap-2">
-                      <div className="from-ember to-coral font-display text-paper grid h-6 w-6 shrink-0 place-items-center rounded-full bg-linear-to-br text-xs font-semibold">
-                        {f.initial}
-                      </div>
-                      <span>{f.author}</span>
-                    </div>
-                    <span className="opacity-70">
-                      ♡ {f.likes.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Era Strip ── */}
-      <section className="py-20">
-        <div className="mx-auto max-w-300 px-6">
-          <div className="mb-2.5 font-mono text-[11px] tracking-[.15em] uppercase opacity-55">
-            DESTINATIONS
-          </div>
-          <h2 className="font-display mb-11 text-[clamp(32px,4vw,52px)] leading-[1.05] font-normal tracking-[-0.02em]">
-            어느 시대로 떠나 볼까요
-          </h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-[repeat(auto-fill,minmax(200px,1fr))]">
-            {ERAS.map((e) => (
-              <Link
-                key={e.id}
-                href="/login"
-                className="border-ink/14 bg-ink/3 hover:bg-ember/8 hover:border-ember/30 rounded-xl border p-5 text-left transition-all duration-300 hover:-translate-y-0.5"
-              >
-                <div className="mb-2.5 text-[26px]">{e.emoji}</div>
-                <div className="mb-0.5 font-mono text-[11px] tracking-[.12em] opacity-60">
-                  {e.label}
-                </div>
-                <div className="font-display mb-1.5 text-[19px] font-medium tracking-[-0.01em]">
-                  {e.title}
-                </div>
-                <div className="text-xs leading-[1.4] opacity-70">
-                  {e.blurb}
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Footer CTA ── */}
       <section className="py-20 pb-16">
         <div className="mx-auto flex max-w-300 flex-col items-center gap-6 px-6 text-center">
           <h2 className="font-display m-0 text-[clamp(32px,4.5vw,56px)] font-normal tracking-[-0.02em] italic">
             당신의 첫 여행이 기다립니다.
           </h2>
           <Link
-            href="/login"
+            href={landingAction.href}
             className="bg-ink text-paper font-display inline-flex items-center gap-2 rounded-full px-7 py-4 text-[15px] font-medium tracking-[-0.01em] whitespace-nowrap shadow-[0_2px_0_rgba(0,0,0,.1),0_10px_30px_-10px_rgba(0,0,0,.4)] transition-transform hover:-translate-y-0.5"
           >
-            ✦ 무료로 시작하기
+            {landingAction.footerLabel}
           </Link>
           <div className="mt-7 flex flex-wrap items-center justify-center gap-2.5 font-mono text-[11px] opacity-50">
             <span>© 2026 Timeleap</span>
