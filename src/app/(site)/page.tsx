@@ -24,7 +24,6 @@ export const metadata: Metadata = {
 };
 
 const LANDING_PUBLIC_DIARY_LIMIT = 12;
-const DESTINATION_CARD_LIMIT = 9;
 const HERO_PHOTO_BY_TONE: Record<EraTone, string> = {
   azure: "ph-fifties",
   champagne: "ph-gilded",
@@ -167,31 +166,34 @@ function getLandingAction({
 }
 
 function createDestinationCards() {
-  const primaryDestinationCards = DESTINATION_COUNTRIES.map((country) => ({
-    blurb: country.eras[0].blurb,
-    city: country.eras[0].city,
-    countryFlag: country.flag,
-    countryName: country.name,
-    id: `${country.code}-${country.eras[0].id}`,
-    label: country.eras[0].year,
-    title: country.eras[0].title,
-  }));
-  const secondaryDestinationCards = DESTINATION_COUNTRIES.flatMap((country) =>
-    country.eras.slice(1).map((era) => ({
+  return DESTINATION_COUNTRIES.flatMap((country) =>
+    country.eras.map((era) => ({
       blurb: era.blurb,
       city: era.city,
+      countryCode: country.code,
       countryFlag: country.flag,
       countryName: country.name,
+      eraId: era.id,
       id: `${country.code}-${era.id}`,
       label: era.year,
       title: era.title,
     })),
   );
+}
 
-  return [...primaryDestinationCards, ...secondaryDestinationCards].slice(
-    0,
-    DESTINATION_CARD_LIMIT,
-  );
+function createDestinationHref({
+  countryCode,
+  eraId,
+}: {
+  countryCode: string;
+  eraId: string;
+}) {
+  const searchParams = new URLSearchParams({
+    country: countryCode,
+    era: eraId,
+  });
+
+  return `/time-machine?${searchParams.toString()}`;
 }
 
 function createLoopedCards<T>(cards: T[]) {
@@ -261,6 +263,7 @@ export default async function Home() {
   ];
   const scrollingDiaryCards = createLoopedCards(diaryCards);
   const alternateScrollingDiaryCards = createLoopedCards(shiftedDiaryCards);
+  const scrollingDestinationCards = createLoopedCards(destinationCards);
   const totalEraCount = DESTINATION_COUNTRIES.reduce(
     (count, country) => count + country.eras.length,
     0,
@@ -529,30 +532,37 @@ export default async function Home() {
           <h2 className="font-display mb-11 text-[clamp(32px,4vw,52px)] leading-[1.05] font-normal tracking-[-0.02em]">
             어느 시대로 떠나 볼까요
           </h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-[repeat(auto-fill,minmax(200px,1fr))]">
-            {destinationCards.map((destination) => (
-              <Link
-                key={destination.id}
-                href={landingAction.href}
-                className="border-ink/14 bg-ink/3 hover:bg-ember/8 hover:border-ember/30 rounded-xl border p-5 text-left transition-all duration-300 hover:-translate-y-0.5"
-              >
-                <div className="mb-2.5 flex items-center justify-between gap-3">
-                  <span className="text-[26px]">{destination.countryFlag}</span>
-                  <span className="font-mono text-[11px] tracking-[.12em] opacity-60">
-                    {destination.label}
-                  </span>
-                </div>
-                <div className="font-display mb-1.5 text-[19px] font-medium tracking-[-0.01em]">
-                  {destination.title}
-                </div>
-                <div className="mb-2 font-mono text-[10px] tracking-[.08em] uppercase opacity-50">
-                  {destination.countryName} · {destination.city}
-                </div>
-                <div className="line-clamp-3 text-xs leading-[1.4] opacity-70">
-                  {destination.blurb}
-                </div>
-              </Link>
-            ))}
+          <div className="archive-marquee -mx-6 overflow-hidden [mask-image:linear-gradient(90deg,transparent,black_8%,black_92%,transparent)] py-2">
+            <div className="archive-marquee-track archive-marquee-track-left flex w-max gap-4 px-6">
+              {scrollingDestinationCards.map((destination, index) => (
+                <Link
+                  key={`${index}-${destination.id}`}
+                  href={createDestinationHref({
+                    countryCode: destination.countryCode,
+                    eraId: destination.eraId,
+                  })}
+                  className="border-ink/14 bg-ink/3 hover:bg-ember/8 hover:border-ember/30 flex h-[216px] w-[232px] shrink-0 flex-col rounded-xl border p-5 text-left transition-all duration-300 hover:-translate-y-0.5 sm:w-[260px]"
+                >
+                  <div className="mb-2.5 flex items-center justify-between gap-3">
+                    <span className="text-[26px]">
+                      {destination.countryFlag}
+                    </span>
+                    <span className="font-mono text-[11px] tracking-[.12em] opacity-60">
+                      {destination.label}
+                    </span>
+                  </div>
+                  <div className="font-display mb-1.5 line-clamp-2 text-[19px] leading-[1.18] font-medium tracking-[-0.01em]">
+                    {destination.title}
+                  </div>
+                  <div className="mb-2 truncate font-mono text-[10px] tracking-[.08em] uppercase opacity-50">
+                    {destination.countryName} · {destination.city}
+                  </div>
+                  <div className="line-clamp-3 text-xs leading-[1.4] opacity-70">
+                    {destination.blurb}
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </section>

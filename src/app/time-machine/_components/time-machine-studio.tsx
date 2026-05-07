@@ -13,6 +13,7 @@ import {
   type DestinationCountry,
   type DestinationEra,
 } from "@/lib/time-machine/destinations";
+import { resolveDestinationSelection } from "@/lib/time-machine/destination";
 import styles from "@/app/time-machine/_components/time-machine-studio.module.css";
 
 const CONTINENTS = [
@@ -70,7 +71,6 @@ const CENTER_X = 230;
 const CENTER_Y = 230;
 const RADIUS = 210;
 const ROTATE_LAT = 12;
-const INITIAL_ROTATE_LNG = -60;
 const AUTO_ROTATE_SPEED = 0.15;
 
 const CONTINENT_POINTS = CONTINENTS.map(parsePath);
@@ -88,6 +88,11 @@ type GlobeMarker = {
   country: DestinationCountry;
   point: ProjectedPoint;
   scale: number;
+};
+
+type TimeMachineStudioProps = {
+  initialCountryCode: DestinationCountry["code"];
+  initialEraId: string;
 };
 
 function parsePath(pathDefinition: string): Array<[number, number]> {
@@ -147,22 +152,31 @@ function cn(...classNames: Array<string | false | null | undefined>) {
   return classNames.filter(Boolean).join(" ");
 }
 
-export default function TimeMachineStudio() {
+export default function TimeMachineStudio({
+  initialCountryCode,
+  initialEraId,
+}: TimeMachineStudioProps) {
   const router = useRouter();
+  const initialDestination = resolveDestinationSelection({
+    countryCode: initialCountryCode,
+    eraId: initialEraId,
+  });
+  const initialRotateLng =
+    -COUNTRY_COORDINATES[initialDestination.country.code].lng;
   const [selectedCountryCode, setSelectedCountryCode] = useState<
     DestinationCountry["code"]
-  >(INITIAL_COUNTRY.code);
+  >(initialDestination.country.code);
   const [selectedEraId, setSelectedEraId] = useState<string>(
-    INITIAL_COUNTRY.eras[0].id,
+    initialDestination.era.id,
   );
-  const [rotateLng, setRotateLng] = useState(INITIAL_ROTATE_LNG);
+  const [rotateLng, setRotateLng] = useState(initialRotateLng);
   const [isDragging, setIsDragging] = useState(false);
 
   const rotateLngRef = useRef(rotateLng);
   const autoRotateRef = useRef(true);
   const draggingRef = useRef(false);
   const dragStartXRef = useRef(0);
-  const dragStartLngRef = useRef(INITIAL_ROTATE_LNG);
+  const dragStartLngRef = useRef(initialRotateLng);
   const randomSeedRef = useRef(123456789);
   const autoRotateTimeoutRef = useRef<number | null>(null);
   const autoRotateFrameRef = useRef<number | null>(null);
