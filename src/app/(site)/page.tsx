@@ -1,6 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
+import LandingTicketCarousel, {
+  type LandingTicketItem,
+} from "@/components/landing/landing-ticket-carousel";
 import type { User } from "@supabase/supabase-js";
 import {
   createDiaryHeroImageUrlOrNull,
@@ -63,6 +66,75 @@ const HOW = [
     d: "나의 여행 일지에 차곡차곡. 원하면 세상과 공유합니다.",
   },
 ];
+const SELFIE_TRANSFORM_INPUT_IMAGES = [
+  {
+    alt: "업로드 셀피 샘플 1",
+    src: "/images/landing/selfie-transform-input-01.jpg",
+  },
+  {
+    alt: "업로드 셀피 샘플 2",
+    src: "/images/landing/selfie-transform-input-02.jpg",
+  },
+  {
+    alt: "업로드 셀피 샘플 3",
+    src: "/images/landing/selfie-transform-input-03.jpg",
+  },
+  {
+    alt: "업로드 셀피 샘플 4",
+    src: "/images/landing/selfie-transform-input-04.jpg",
+  },
+] as const;
+const SELFIE_TRANSFORM_OUTPUT_IMAGE = {
+  alt: "Timeleap AI 생성 사진 샘플",
+  src: "/images/landing/selfie-transform-output.jpg",
+} as const;
+const HERO_TICKET_DIARY_IDS = [
+  "51962237-a1fe-4df6-bc72-0e09c7d0d502",
+  "191f722c-c122-4120-92ee-befd2568317a",
+  "57a695fa-38fb-4ce4-a8fd-916f5b327643",
+] as const;
+const HERO_TICKET_ITEMS: readonly LandingTicketItem[] = [
+  {
+    alt: "Timeleap 1925년 뉴욕 여행 사진 샘플",
+    arrivedLabel: "ARRIVED · 1925",
+    city: "NEW YORK",
+    era: "ROARING · 20s",
+    gate: "01",
+    href: `/diaries/${HERO_TICKET_DIARY_IDS[0]}`,
+    passenger: "TIMELEAP",
+    serial: "NO. 51962",
+    src: "/images/landing/selfie-transform-output.jpg",
+    year: "1925",
+  },
+  {
+    alt: "Timeleap 시간여행 사진 샘플 2",
+    arrivedLabel: "ARRIVED · 1936",
+    city: "GYEONGSEONG",
+    era: "MODERN · LIGHT",
+    gate: "02",
+    href: `/diaries/${HERO_TICKET_DIARY_IDS[1]}`,
+    passenger: "TIMELEAP",
+    serial: "NO. 191F7",
+    src: "/images/landing/selfie-transform-output-02.jpg",
+    year: "1936",
+  },
+  {
+    alt: "Timeleap 시간여행 사진 샘플 3",
+    arrivedLabel: "ARRIVED · 1987",
+    city: "TOKYO",
+    era: "BUBBLE · NIGHT",
+    gate: "03",
+    href: `/diaries/${HERO_TICKET_DIARY_IDS[2]}`,
+    passenger: "TIMELEAP",
+    serial: "NO. 57A69",
+    src: "/images/landing/selfie-transform-output-03.jpg",
+    year: "1987",
+  },
+] as const;
+const SELFIE_TRANSFORM_ARROW_IMAGE = {
+  alt: "셀피에서 생성 사진으로 이어지는 화살표",
+  src: "/images/landing/selfie-transform-arrow.webp",
+} as const;
 
 function getLandingAction({
   authUser,
@@ -248,84 +320,7 @@ export default async function Home() {
             </div>
           </div>
 
-          <div className="relative flex justify-center">
-            <div className="bg-paper text-ink ticket-notch relative w-full max-w-105 -rotate-3 rounded-md shadow-[0_20px_50px_-20px_rgba(0,0,0,.5),0_4px_12px_rgba(0,0,0,.15)]">
-              <div className="border-ink-3 flex items-center gap-3.5 border-b border-dashed px-5.5 py-4">
-                <div className="flex flex-1 items-center gap-2.5">
-                  <div>
-                    <div className="font-display text-sm font-medium">
-                      TIMELEAP
-                    </div>
-                    <div className="font-mono text-[9px] tracking-[.15em] opacity-60">
-                      BOARDING PASS
-                    </div>
-                  </div>
-                </div>
-                <div className="flex-1" />
-                <div className="font-mono text-[10px] tracking-[.15em] opacity-55">
-                  NO. 00412
-                </div>
-              </div>
-
-              <div className="p-5.5">
-                <div className="flex items-end justify-between gap-3.5">
-                  <div>
-                    <div className="mb-1 font-mono text-[9px] tracking-[.15em] uppercase opacity-55">
-                      FROM
-                    </div>
-                    <div className="font-display flex flex-col text-[28px] leading-none font-medium tracking-tight">
-                      2026
-                      <span className="text-ember-2 mt-0.5 font-mono text-[10px] font-medium tracking-[.12em]">
-                        SEOUL
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-ember pb-1 text-2xl">→</div>
-                  <div>
-                    <div className="mb-1 font-mono text-[9px] tracking-[.15em] uppercase opacity-55">
-                      TO
-                    </div>
-                    <div className="font-display flex flex-col text-[28px] leading-none font-medium tracking-tight">
-                      1925
-                      <span className="text-ember-2 mt-0.5 font-mono text-[10px] font-medium tracking-[.12em]">
-                        NEW YORK
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="ph-ticket relative my-4 aspect-2/1 overflow-hidden rounded-sm" />
-
-                <div className="flex justify-between gap-5">
-                  {[
-                    ["PASSENGER", "JIMIN · P"],
-                    ["ERA", "ROARING · 20s"],
-                    ["GATE", "04"],
-                  ].map(([label, value]) => (
-                    <div key={label}>
-                      <div className="mb-1 font-mono text-[9px] tracking-[.15em] uppercase opacity-55">
-                        {label}
-                      </div>
-                      <div className="font-display text-sm font-medium">
-                        {value}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="border-ink-3 border-t border-dashed px-5.5 pt-3 pb-4">
-                <div className="barcode-bg h-5 rounded-sm opacity-75" />
-              </div>
-            </div>
-
-            <div className="pointer-events-none absolute top-0 -right-2 rotate-12">
-              <span className="stamp">DEPARTED</span>
-            </div>
-            <div className="pointer-events-none absolute bottom-5 -left-2 -rotate-[8deg]">
-              <span className="stamp stamp-sage">ARRIVED · 1925</span>
-            </div>
-          </div>
+          <LandingTicketCarousel tickets={HERO_TICKET_ITEMS} />
         </div>
       </section>
 
@@ -426,6 +421,106 @@ export default async function Home() {
         </div>
       </section>
 
+      <section className="border-ink/10 bg-paper-2/45 border-y py-20">
+        <div className="mx-auto max-w-300 px-6">
+          <div className="mb-10">
+            <div>
+              <div className="mb-2.5 font-mono text-[11px] tracking-[.15em] uppercase opacity-55">
+                Face to Era
+              </div>
+              <h2 className="font-display m-0 text-[clamp(32px,4vw,52px)] leading-[1.05] font-normal tracking-[-0.02em]">
+                셀피가 시간여행 사진이 되는 순간
+              </h2>
+              <p className="mt-4 max-w-[520px] text-[14px] leading-[1.65] opacity-65">
+                몇 장의 얼굴 사진을 바탕으로 선택한 시대와 나라의 장면을
+                완성합니다.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,0.78fr)_88px_minmax(0,1fr)] lg:gap-8">
+            <div>
+              <div className="mb-3 font-mono text-[10px] tracking-[.14em] uppercase opacity-45">
+                Uploaded Photos
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:max-w-[500px]">
+                {SELFIE_TRANSFORM_INPUT_IMAGES.map((image) => (
+                  <div
+                    key={image.src}
+                    className="border-ink/12 bg-paper relative aspect-square overflow-hidden rounded-[8px] border shadow-[0_18px_40px_-30px_rgba(0,0,0,.45)]"
+                  >
+                    <Image
+                      src={image.src}
+                      alt={image.alt}
+                      fill
+                      sizes="(min-width: 1024px) 235px, (min-width: 640px) 45vw, 50vw"
+                      className="object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-center">
+              <div className="relative h-18 w-28 scale-y-[-1] rotate-[139deg] lg:h-20 lg:w-32 lg:rotate-[49deg]">
+                <Image
+                  src={SELFIE_TRANSFORM_ARROW_IMAGE.src}
+                  alt={SELFIE_TRANSFORM_ARROW_IMAGE.alt}
+                  fill
+                  sizes="128px"
+                  className="object-contain"
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="mb-3 font-mono text-[10px] tracking-[.14em] uppercase opacity-45">
+                Generated Memory
+              </div>
+              <div className="border-ink/12 bg-paper relative mx-auto aspect-[4/5] w-full max-w-[520px] overflow-hidden rounded-[8px] border shadow-[0_24px_58px_-38px_rgba(0,0,0,.58)] lg:mx-0">
+                <Image
+                  src={SELFIE_TRANSFORM_OUTPUT_IMAGE.src}
+                  alt={SELFIE_TRANSFORM_OUTPUT_IMAGE.alt}
+                  fill
+                  sizes="(min-width: 1024px) 48vw, 100vw"
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent_54%,rgba(26,20,16,0.22))]" />
+                <div className="absolute top-3 right-3">
+                  <span className="stamp bg-paper/88 text-ember scale-[1.05] border-current px-4 py-2 text-[11px] shadow-[0_8px_22px_-16px_rgba(0,0,0,.8)]">
+                    AI Generated
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-20">
+        <div className="mx-auto max-w-300 px-6">
+          <div className="mb-10 font-mono text-[11px] tracking-[.15em] uppercase opacity-55">
+            HOW IT WORKS
+          </div>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {HOW.map(({ n, t, d }) => (
+              <div
+                key={n}
+                className="border-ink/15 bg-ink/3 hover:bg-ink/5 cursor-default rounded-xl border p-7 transition-all duration-300 hover:-translate-y-0.5"
+              >
+                <div className="mb-4 font-mono text-[11px] tracking-[.15em] opacity-45">
+                  {n}
+                </div>
+                <div className="font-display mb-2 text-[20px] font-medium tracking-[-0.01em]">
+                  {t}
+                </div>
+                <div className="text-sm leading-normal opacity-70">{d}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="py-20">
         <div className="mx-auto max-w-300 px-6">
           <div className="mb-2.5 font-mono text-[11px] tracking-[.15em] uppercase opacity-55">
@@ -457,30 +552,6 @@ export default async function Home() {
                   {destination.blurb}
                 </div>
               </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20">
-        <div className="mx-auto max-w-300 px-6">
-          <div className="mb-10 font-mono text-[11px] tracking-[.15em] uppercase opacity-55">
-            HOW IT WORKS
-          </div>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {HOW.map(({ n, t, d }) => (
-              <div
-                key={n}
-                className="border-ink/15 bg-ink/3 hover:bg-ink/5 cursor-default rounded-xl border p-7 transition-all duration-300 hover:-translate-y-0.5"
-              >
-                <div className="mb-4 font-mono text-[11px] tracking-[.15em] opacity-45">
-                  {n}
-                </div>
-                <div className="font-display mb-2 text-[20px] font-medium tracking-[-0.01em]">
-                  {t}
-                </div>
-                <div className="text-sm leading-normal opacity-70">{d}</div>
-              </div>
             ))}
           </div>
         </div>
