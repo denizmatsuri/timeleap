@@ -1,0 +1,165 @@
+.photoPlate {
+  aspect-ratio: 1;
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(255, 250, 237, 0.22);
+  border-radius: 6px;
+  background:
+    linear-gradient(135deg, rgba(201, 148, 74, 0.72), rgba(196, 64, 107, 0.46)),
+    radial-gradient(circle at 35% 28%, rgba(255, 250, 237, 0.45), transparent 34%);
+  color: #190f17;
+  isolation: isolate;
+}
+
+.photoPlate[data-has-photo="true"] {
+  background: #100f1c;
+}
+
+.photoPlate[data-has-photo="true"]::before,
+.photoPlate[data-has-photo="true"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.photoPlate[data-has-photo="true"]::before {
+  background:
+    repeating-linear-gradient(
+      180deg,
+      rgba(255, 250, 237, 0.12) 0 1px,
+      transparent 1px 5px
+    ),
+    linear-gradient(90deg, rgba(112, 168, 64, 0.08), transparent, rgba(196, 64, 107, 0.1));
+  mix-blend-mode: screen;
+  animation: scanNoise 0.86s steps(3, end) infinite;
+}
+
+.photoPlate[data-has-photo="true"]::after {
+  background:
+    linear-gradient(90deg, transparent 0 22%, rgba(201, 148, 74, 0.18) 22% 26%, transparent 26% 66%, rgba(196, 64, 107, 0.16) 66% 70%, transparent 70%),
+    linear-gradient(180deg, transparent 0 44%, rgba(255, 250, 237, 0.16) 44% 48%, transparent 48%);
+  opacity: 0;
+  mix-blend-mode: screen;
+  animation: glitchFlash 1.15s steps(2, end) infinite;
+}
+
+.profilePhoto {
+  z-index: 1;
+  object-fit: cover;
+  filter: grayscale(1) contrast(1.18) brightness(0.9);
+  animation: photoJitter 1.05s steps(2, end) infinite;
+}
+
+.photoGlitch {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background:
+    linear-gradient(90deg, rgba(112, 168, 64, 0.22), transparent 34%),
+    linear-gradient(270deg, rgba(196, 64, 107, 0.2), transparent 42%);
+  clip-path: polygon(0 18%, 100% 9%, 100% 24%, 0 31%);
+  opacity: 0;
+  mix-blend-mode: screen;
+  animation: glitchSlice 1.15s steps(2, end) infinite;
+}
+
+.photoInitials {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-fraunces), serif;
+  font-size: 28px;
+}
+
+@keyframes photoJitter {
+  0% {
+    transform: translateX(-1px) scale(1.018);
+  }
+
+  18% {
+    transform: translateX(2px) scale(1.018);
+  }
+
+  34% {
+    transform: translateX(-1px) scale(1.012);
+  }
+
+  48% {
+    transform: translateX(3px) scale(1.02);
+  }
+
+  63% {
+    transform: translateX(0) scale(1.01);
+  }
+
+  78% {
+    transform: translateX(1px) scale(1.014);
+  }
+
+  100% {
+    transform: translateX(-1px) scale(1.018);
+  }
+}
+
+@keyframes scanNoise {
+  0%,
+  100% {
+    transform: translate(-2px, -2px);
+    opacity: 0.36;
+  }
+
+  50% {
+    transform: translate(2px, 2px);
+    opacity: 0.58;
+  }
+}
+
+@keyframes glitchFlash {
+  0%,
+  72%,
+  100% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+
+  76% {
+    opacity: 0.42;
+    transform: translateX(-3px);
+  }
+
+  80% {
+    opacity: 0.28;
+    transform: translateX(4px);
+  }
+}
+
+@keyframes glitchSlice {
+  0%,
+  70%,
+  100% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+
+  74% {
+    opacity: 0.46;
+    transform: translateX(4px);
+  }
+
+  80% {
+    opacity: 0.24;
+    transform: translateX(-3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photoPlate *,
+  .photoPlate::before,
+  .photoPlate::after {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+  }
+}

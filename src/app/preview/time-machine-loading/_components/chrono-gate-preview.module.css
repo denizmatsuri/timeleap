@@ -1,4 +1,4 @@
-.departure {
+.preview {
   min-height: 100dvh;
   position: relative;
   overflow: hidden;
@@ -527,77 +527,6 @@
   animation: signalSweep 1.35s var(--e-out) infinite;
 }
 
-.errorCard {
-  width: min(100%, 440px);
-  margin-top: 12px;
-  padding: 26px 24px;
-  border: 1px solid rgba(255, 250, 237, 0.16);
-  border-radius: 8px;
-  background:
-    linear-gradient(180deg, rgba(255, 250, 237, 0.09), rgba(255, 250, 237, 0.035)),
-    rgba(12, 15, 31, 0.58);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.25);
-  text-align: center;
-  backdrop-filter: blur(18px);
-}
-
-.errorTitle {
-  font-family: var(--font-fraunces), serif;
-  font-weight: 400;
-  font-size: 28px;
-  line-height: 1.08;
-  color: var(--photocard);
-}
-
-.errorDescription {
-  margin-top: 10px;
-  font-size: 14px;
-  line-height: 1.7;
-  color: rgba(255, 250, 237, 0.68);
-  word-break: keep-all;
-}
-
-.errorActions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 20px;
-}
-
-.retryButton,
-.secondaryButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 38px;
-  padding: 0 16px;
-  border-radius: 999px;
-  font-family: var(--font-geist-mono), monospace;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease,
-    opacity 0.2s ease;
-}
-
-.retryButton {
-  background: var(--ember);
-  color: #100f1c;
-}
-
-.secondaryButton {
-  border: 1px solid rgba(255, 250, 237, 0.16);
-  background: rgba(255, 250, 237, 0.06);
-  color: rgba(255, 250, 237, 0.74);
-}
-
-.retryButton:hover,
-.secondaryButton:hover {
-  opacity: 0.88;
-}
-
 .dossierHero {
   min-height: 118px;
   display: grid;
@@ -699,27 +628,27 @@
   color: rgba(255, 250, 237, 0.86);
 }
 
-.departure[data-signal-section="start"] .gate,
-.departure[data-signal-section="wait"] .gate {
+.preview[data-signal-section="start"] .gate,
+.preview[data-signal-section="wait"] .gate {
   animation: gateShudder 1.8s linear infinite;
 }
 
-.departure[data-signal-section="arrival"] .timeBands,
-.departure[data-signal-section="wait"] .timeBands {
+.preview[data-signal-section="arrival"] .timeBands,
+.preview[data-signal-section="wait"] .timeBands {
   animation-duration: 2.8s;
 }
 
-.departure[data-signal-section="arrival"] .portalGlow,
-.departure[data-signal-section="wait"] .portalGlow {
+.preview[data-signal-section="arrival"] .portalGlow,
+.preview[data-signal-section="wait"] .portalGlow {
   filter: blur(14px);
 }
 
-.departure[data-arriving="true"] .arrivalStamp {
+.preview[data-arriving="true"] .arrivalStamp {
   opacity: 1;
   transform: translateX(-50%) rotate(-9deg) scale(1);
 }
 
-.departure[data-arriving="true"] .gateNeedle {
+.preview[data-arriving="true"] .gateNeedle {
   animation-duration: 0.65s;
 }
 
@@ -891,9 +820,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .departure *,
-  .departure *::before,
-  .departure *::after {
+  .preview *,
+  .preview *::before,
+  .preview *::after {
     animation-duration: 0.01ms;
     animation-iteration-count: 1;
     scroll-behavior: auto;
