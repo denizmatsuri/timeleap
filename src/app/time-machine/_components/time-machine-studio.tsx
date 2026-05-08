@@ -34,11 +34,14 @@ import styles from "@/app/time-machine/_components/time-machine-studio.module.cs
 
 const COUNTRY_TOPOLOGY_ID_BY_CODE: Record<DestinationCountry["code"], string> =
   {
+    EG: "818",
     FR: "250",
     GB: "826",
+    IN: "356",
     JP: "392",
     KR: "410",
     MX: "484",
+    TR: "792",
     US: "840",
   };
 
@@ -148,8 +151,9 @@ export default function TimeMachineStudio({
     countryCode: initialCountryCode,
     eraId: initialEraId,
   });
-  const initialRotateLng =
-    -getDestinationCountryCoordinates(initialDestination.country.code).lng;
+  const initialRotateLng = -getDestinationCountryCoordinates(
+    initialDestination.country.code,
+  ).lng;
   const [selectedCountryCode, setSelectedCountryCode] = useState<
     DestinationCountry["code"]
   >(initialDestination.country.code);
@@ -531,7 +535,9 @@ export default function TimeMachineStudio({
                     <g
                       key={country.code}
                       transform={`translate(${point.x},${point.y})`}
-                      onClick={(event) => handleCountryClick(event, country.code)}
+                      onClick={(event) =>
+                        handleCountryClick(event, country.code)
+                      }
                       onPointerDown={(event) => event.stopPropagation()}
                       className={styles.globeMarkerGroup}
                     >

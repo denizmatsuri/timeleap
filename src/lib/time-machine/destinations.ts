@@ -39,7 +39,7 @@ export type DestinationEra = {
 };
 
 export type DestinationCountry = {
-  code: "FR" | "GB" | "JP" | "KR" | "MX" | "US";
+  code: "EG" | "FR" | "GB" | "IN" | "JP" | "KR" | "MX" | "TR" | "US";
   flag: string;
   name: string;
   englishName: string;
@@ -66,13 +66,48 @@ export const DESTINATION_COUNTRIES = [
     flag: "🇰🇷",
     name: "대한민국",
     englishName: "Korea",
-    catchline: "근대화의 속도감이 가장 선명하게 보이는 타임라인",
+    catchline: "고대 왕경과 근대 도시의 간극이 크게 벌어지는 타임라인",
     summary:
-      "서울 한 도시 안에서도 전차 시대, 명동 청춘 문화, 88 올림픽의 낙관이 완전히 다른 온도로 갈립니다.",
+      "서라벌의 금관과 석탑, 경성의 전차, 명동 청춘 문화, 88 올림픽의 낙관이 완전히 다른 온도로 갈립니다.",
     whyItFits:
-      "로컬 사용자가 바로 감정이입할 수 있고, 의상·간판·도시 밀도가 시대별로 크게 달라져 결과물 차이를 설계하기 좋습니다.",
-    yearRange: "1936 → 1988",
+      "로컬 사용자가 바로 감정이입할 수 있고, 고대 복식과 근현대 도시 밀도가 크게 달라져 결과물 차이를 설계하기 좋습니다.",
+    yearRange: "751 → 1988",
     eras: [
+      {
+        id: "kr-silla",
+        year: "751",
+        title: "신라 서라벌",
+        city: "서라벌",
+        headline: "금관 장식과 석탑 그림자가 느리게 겹치는 왕경의 오후",
+        blurb:
+          "한옥 골목이나 근대 간판과 완전히 다른 고대 왕경 좌표로, 비단 복식과 기와, 석탑, 연등이 시대 차이를 크게 만들어 줍니다.",
+        mood: "Gilded Kingdom",
+        soundtrack: "가야금 선율 + 절 마당의 풍경 소리",
+        wardrobe: "비단 포, 금빛 관 장식, 넓은 허리띠",
+        texture: "청동 장식, 단청 목재, 석탑 표면",
+        motifs: ["불국사 석탑", "왕경 기와지붕", "연등 행렬", "금관 장식"],
+        sceneCards: [
+          {
+            id: "temple",
+            label: "TEMPLE",
+            title: "석탑 앞 연등길",
+            note: "따뜻한 등불과 오래된 석재의 대비",
+          },
+          {
+            id: "palace",
+            label: "PALACE",
+            title: "월성 근처 왕경 산책",
+            note: "기와선과 비단 옷자락이 겹치는 장면",
+          },
+          {
+            id: "market",
+            label: "MARKET",
+            title: "서라벌 시장 골목",
+            note: "청동 장식과 직물 색이 살아나는 컷",
+          },
+        ],
+        tone: "champagne",
+      },
       {
         id: "kr-gyeongseong",
         year: "1936",
@@ -120,7 +155,12 @@ export const DESTINATION_COUNTRIES = [
         soundtrack: "오르간 팝 + 라디오 튜닝 노이즈",
         wardrobe: "짧은 재킷, 와이드 팬츠, 얇은 셔츠",
         texture: "형광등, 알루미늄 셔터, 전자 부품 상자",
-        motifs: ["세운상가 간판", "전자 부품 진열대", "옥상 난간", "형광등 골목"],
+        motifs: [
+          "세운상가 간판",
+          "전자 부품 진열대",
+          "옥상 난간",
+          "형광등 골목",
+        ],
         sceneCards: [
           {
             id: "arcade",
@@ -155,7 +195,12 @@ export const DESTINATION_COUNTRIES = [
         soundtrack: "포크 록 + 카세트 히스",
         wardrobe: "재킷, 와이드 칼라 셔츠, 데님",
         texture: "네온 간판, 카세트 플라스틱, 필름 번짐",
-        motifs: ["명동 극장 간판", "다방 유리문", "카세트 플레이어", "번화가 횡단보도"],
+        motifs: [
+          "명동 극장 간판",
+          "다방 유리문",
+          "카세트 플레이어",
+          "번화가 횡단보도",
+        ],
         sceneCards: [
           {
             id: "marquee",
@@ -190,7 +235,12 @@ export const DESTINATION_COUNTRIES = [
         soundtrack: "신스팝 + 응원가 브라스",
         wardrobe: "트랙수트, 볼캡, 컬러 블록 윈드브레이커",
         texture: "캠코더 화질, 플라스틱 배너, 깨끗한 콘크리트",
-        motifs: ["잠실 스타디움", "오륜 그래픽", "휴대용 캠코더", "강변도로 야경"],
+        motifs: [
+          "잠실 스타디움",
+          "오륜 그래픽",
+          "휴대용 캠코더",
+          "강변도로 야경",
+        ],
         sceneCards: [
           {
             id: "stadium",
@@ -358,7 +408,12 @@ export const DESTINATION_COUNTRIES = [
         soundtrack: "왈츠 + 카페 소음",
         wardrobe: "하이넥 드레스, 장갑, 보터 햇",
         texture: "황동 난간, 포스터 종이, 샴페인 기포",
-        motifs: ["아르누보 포스터", "세느강 가스등", "카페 테라스", "오페라 장식"],
+        motifs: [
+          "아르누보 포스터",
+          "세느강 가스등",
+          "카페 테라스",
+          "오페라 장식",
+        ],
         sceneCards: [
           {
             id: "bridge",
@@ -393,7 +448,12 @@ export const DESTINATION_COUNTRIES = [
         soundtrack: "예예 팝 + 해변 웨이브",
         wardrobe: "선글라스, 스카프, 스트라이프 셔츠",
         texture: "바닷물 반짝임, 크롬 차체, 리넨",
-        motifs: ["푸른 해안선", "스트라이프 파라솔", "오픈카", "화이트 호텔 발코니"],
+        motifs: [
+          "푸른 해안선",
+          "스트라이프 파라솔",
+          "오픈카",
+          "화이트 호텔 발코니",
+        ],
         sceneCards: [
           {
             id: "coast",
@@ -477,7 +537,12 @@ export const DESTINATION_COUNTRIES = [
         soundtrack: "볼레로 + 극장 로비 잔향",
         wardrobe: "슬림 수트, 새틴 드레스, 광택 구두",
         texture: "금색 극장 조명, 벨벳 커튼, 고급 타일",
-        motifs: ["아르데코 극장", "볼레로 바", "택시 헤드라이트", "야간 플라자"],
+        motifs: [
+          "아르데코 극장",
+          "볼레로 바",
+          "택시 헤드라이트",
+          "야간 플라자",
+        ],
         sceneCards: [
           {
             id: "theater",
@@ -547,7 +612,12 @@ export const DESTINATION_COUNTRIES = [
         soundtrack: "브라스 밴드 + 군중 함성",
         wardrobe: "스포츠 재킷, 깃발 스카프, 캡",
         texture: "현수막 천, 광장 석재, 뜨거운 햇빛",
-        motifs: ["대형 깃발", "플라자 축제", "스트리트 포스터", "초록-빨강 응원 색"],
+        motifs: [
+          "대형 깃발",
+          "플라자 축제",
+          "스트리트 포스터",
+          "초록-빨강 응원 색",
+        ],
         sceneCards: [
           {
             id: "plaza",
@@ -569,6 +639,273 @@ export const DESTINATION_COUNTRIES = [
           },
         ],
         tone: "fiesta",
+      },
+    ],
+  },
+  {
+    code: "TR",
+    flag: "🇹🇷",
+    name: "튀르키예",
+    englishName: "Turkey",
+    catchline: "비잔틴 돔과 오스만 궁정, 보스포루스 일상이 겹치는 국가",
+    summary:
+      "콘스탄티노폴리스의 황금 모자이크와 오스만 이스탄불의 타일, 향신료 시장이 완전히 다른 화면 밀도를 만듭니다.",
+    whyItFits:
+      "동서양 경계의 도시 미감이 강하고, 돔·타일·시장·해협 같은 오브제가 시대를 즉시 읽히게 합니다.",
+    yearRange: "537 → 1557",
+    eras: [
+      {
+        id: "tr-byzantine",
+        year: "537",
+        title: "비잔틴 콘스탄티노폴리스",
+        city: "콘스탄티노폴리스",
+        headline: "황금 모자이크와 대리석 회랑이 빛나는 제국 수도",
+        blurb:
+          "현대 이스탄불이나 오스만풍과 구분되는 초기 제국 좌표로, 거대한 돔과 모자이크, 청동 램프가 고대성을 강하게 만듭니다.",
+        mood: "Mosaic Majesty",
+        soundtrack: "성가 합창 + 대리석 홀 잔향",
+        wardrobe: "긴 튜닉, 자수 망토, 금실 장식",
+        texture: "금박 모자이크, 대리석, 청동 램프",
+        motifs: ["아야소피아 돔", "황금 모자이크", "대리석 회랑", "청동 촛대"],
+        sceneCards: [
+          {
+            id: "dome",
+            label: "DOME",
+            title: "아야소피아 돔 아래",
+            note: "금빛 모자이크와 높은 공간감",
+          },
+          {
+            id: "court",
+            label: "COURT",
+            title: "대리석 궁정 회랑",
+            note: "자수 망토와 차가운 석재의 대비",
+          },
+          {
+            id: "harbor",
+            label: "HARBOR",
+            title: "금각만 항구의 저녁",
+            note: "돛과 청동빛 노을이 겹치는 장면",
+          },
+        ],
+        tone: "champagne",
+      },
+      {
+        id: "tr-ottoman",
+        year: "1557",
+        title: "오스만 이스탄불",
+        city: "이스탄불",
+        headline: "이즈닉 타일과 향신료 향이 번지는 제국의 시장길",
+        blurb:
+          "오스만 제국의 궁정과 시장을 한 프레임에 담는 좌표로, 터번, 타일, 카펫, 보스포루스 빛이 매우 강한 차이를 냅니다.",
+        mood: "Sultanate Blue",
+        soundtrack: "네이 플루트 + 시장의 낮은 웅성임",
+        wardrobe: "터번, 카프탄, 자수 조끼",
+        texture: "이즈닉 타일, 비단 카펫, 향신료 가루",
+        motifs: [
+          "술탄 모스크",
+          "이즈닉 타일",
+          "그랜드 바자르",
+          "보스포루스 물빛",
+        ],
+        sceneCards: [
+          {
+            id: "mosque",
+            label: "MOSQUE",
+            title: "푸른 타일의 안뜰",
+            note: "돔 그림자와 청록 타일의 리듬",
+          },
+          {
+            id: "bazaar",
+            label: "BAZAAR",
+            title: "그랜드 바자르 향신료 골목",
+            note: "붉은 향신료와 비단 카펫의 밀도",
+          },
+          {
+            id: "bosphorus",
+            label: "WATER",
+            title: "보스포루스 해질녘",
+            note: "배 그림자와 금빛 하늘이 만나는 컷",
+          },
+        ],
+        tone: "cobalt",
+      },
+    ],
+  },
+  {
+    code: "IN",
+    flag: "🇮🇳",
+    name: "인도",
+    englishName: "India",
+    catchline: "석굴 벽화와 무굴 대리석이 완전히 다른 색을 내는 국가",
+    summary:
+      "굽타 시대 아잔타의 벽화와 무굴 아그라의 백색 대리석은 의상, 공간, 빛의 방향이 크게 다릅니다.",
+    whyItFits:
+      "직물과 장신구, 궁전 건축, 벽화 색이 풍부해서 인물 사진의 시대성이 강하게 드러납니다.",
+    yearRange: "480 → 1648",
+    eras: [
+      {
+        id: "in-ajanta",
+        year: "480",
+        title: "아잔타 벽화의 빛",
+        city: "아잔타",
+        headline: "암벽 사원 안쪽에서 광물 안료와 금빛 장신구가 번지는 순간",
+        blurb:
+          "고대 인도의 석굴 사원 좌표로, 어두운 암벽과 채색 벽화, 얇은 직물, 장신구가 현대 도시와 완전히 다른 장면을 만듭니다.",
+        mood: "Cave Fresco",
+        soundtrack: "탄푸라 드론 + 석굴의 긴 울림",
+        wardrobe: "드레이프 직물, 금빛 팔찌, 목걸이 장식",
+        texture: "광물 안료, 암벽 표면, 오래된 석재",
+        motifs: ["아잔타 벽화", "암벽 사원", "금빛 팔찌", "등잔 불빛"],
+        sceneCards: [
+          {
+            id: "fresco",
+            label: "FRESCO",
+            title: "벽화 앞 낮은 등불",
+            note: "광물 안료와 그림자가 겹치는 장면",
+          },
+          {
+            id: "cave",
+            label: "CAVE",
+            title: "석굴 기둥 사이",
+            note: "암벽 질감과 금빛 장신구의 대비",
+          },
+          {
+            id: "terrace",
+            label: "VALLEY",
+            title: "계곡을 보는 사원 테라스",
+            note: "먼 숲과 밝은 직물 색이 살아나는 컷",
+          },
+        ],
+        tone: "ember",
+      },
+      {
+        id: "in-mughal",
+        year: "1648",
+        title: "무굴 아그라",
+        city: "아그라",
+        headline: "백색 대리석과 자수 비단이 반사되는 정원의 아침",
+        blurb:
+          "무굴 궁정의 정제된 대칭과 섬세한 직물, 보석 장식이 중심이라 고대 석굴과 전혀 다른 고급스러운 결과를 기대할 수 있습니다.",
+        mood: "Marble Garden",
+        soundtrack: "시타르 선율 + 분수 물소리",
+        wardrobe: "자수 안가르카, 파그리, 보석 장식",
+        texture: "백색 대리석, 비단 자수, 정원 수로",
+        motifs: ["타지마할 대리석", "무굴 정원", "자수 비단", "분수 수로"],
+        sceneCards: [
+          {
+            id: "marble",
+            label: "MARBLE",
+            title: "대리석 아치 아래",
+            note: "흰 석재와 보석 색의 섬세한 대비",
+          },
+          {
+            id: "garden",
+            label: "GARDEN",
+            title: "무굴 정원 수로",
+            note: "대칭 구도와 잔잔한 반사광",
+          },
+          {
+            id: "terrace",
+            label: "COURT",
+            title: "아그라 궁정 테라스",
+            note: "자수 비단과 붉은 사암이 겹치는 컷",
+          },
+        ],
+        tone: "champagne",
+      },
+    ],
+  },
+  {
+    code: "EG",
+    flag: "🇪🇬",
+    name: "이집트",
+    englishName: "Egypt",
+    catchline: "고대 신전과 20세기 카이로가 극단적으로 대비되는 국가",
+    summary:
+      "룩소르 신전의 석주와 파라오 장식, 1920년대 카이로의 아르데코 호텔과 필름 톤이 서로 다른 시대감을 만듭니다.",
+    whyItFits:
+      "고대 좌표의 시각 언어가 매우 강하고, 근대 카이로와 붙였을 때 같은 국가 안의 시간 차이가 즉시 보입니다.",
+    yearRange: "기원전 1470 → 1925",
+    eras: [
+      {
+        id: "eg-thebes",
+        year: "기원전 1470",
+        title: "고대 테베 신전",
+        city: "테베",
+        headline: "거대한 석주와 린넨, 금빛 장신구가 햇빛에 선명해지는 순간",
+        blurb:
+          "현대적 거리 요소가 거의 없는 고대 이집트 좌표로, 석주, 파피루스, 린넨, 금 장신구가 시대 차이를 매우 크게 만듭니다.",
+        mood: "Sunlit Temple",
+        soundtrack: "프레임 드럼 + 사막 바람",
+        wardrobe: "린넨 튜닉, 넓은 칼라 목걸이, 금빛 팔찌",
+        texture: "사암 석주, 파피루스, 건조한 햇빛",
+        motifs: [
+          "카르나크 석주",
+          "파피루스 두루마리",
+          "히에로글리프",
+          "금빛 목걸이",
+        ],
+        sceneCards: [
+          {
+            id: "columns",
+            label: "TEMPLE",
+            title: "거대한 석주 사이",
+            note: "사암 그림자와 린넨의 밝은 대비",
+          },
+          {
+            id: "papyrus",
+            label: "SCRIPT",
+            title: "파피루스 작업대",
+            note: "잉크 선과 금 장신구가 보이는 프레임",
+          },
+          {
+            id: "nile",
+            label: "NILE",
+            title: "나일 강변의 황금빛",
+            note: "갈대와 돛배가 느리게 흐르는 컷",
+          },
+        ],
+        tone: "sepia",
+      },
+      {
+        id: "eg-cairo-deco",
+        year: "1925",
+        title: "카이로 아르데코",
+        city: "카이로",
+        headline: "호텔 로비의 황동 조명과 사막빛 필름이 만나는 밤",
+        blurb:
+          "고대 신전과 대비되는 근대 카이로 좌표로, 아르데코 타이포, 호텔 로비, 트램과 필름 입자가 도시적 세련미를 만듭니다.",
+        mood: "Desert Deco",
+        soundtrack: "우드 선율 + 호텔 로비 소음",
+        wardrobe: "리넨 수트, 클로슈 햇, 실크 스카프",
+        texture: "황동 조명, 대리석 바닥, 낡은 필름 그레인",
+        motifs: [
+          "아르데코 호텔",
+          "카이로 트램",
+          "황동 엘리베이터",
+          "사막빛 포스터",
+        ],
+        sceneCards: [
+          {
+            id: "hotel",
+            label: "HOTEL",
+            title: "아르데코 호텔 로비",
+            note: "황동 조명과 대리석 반사광",
+          },
+          {
+            id: "tram",
+            label: "TRAM",
+            title: "카이로 트램 정류장",
+            note: "도시 먼지와 선명한 타이포",
+          },
+          {
+            id: "terrace",
+            label: "TERRACE",
+            title: "나일 강이 보이는 테라스",
+            note: "린넨 수트와 따뜻한 밤공기",
+          },
+        ],
+        tone: "champagne",
       },
     ],
   },
@@ -783,10 +1120,10 @@ export const TIME_MACHINE_RECOMMENDATIONS = [
     flag: "🇰🇷",
     name: "대한민국",
     strength: "즉시 시그니처화 추천",
-    headline: "로컬 감정 이입과 시대 변화가 모두 강함",
-    recommendedEras: "1930s 경성 · 1970s 명동 · 1988 서울",
+    headline: "고대 왕경부터 근현대 도시까지 변화 폭이 큼",
+    recommendedEras: "751 신라 · 1930s 경성 · 1988 서울",
     reason:
-      "서비스 정체성과 가장 잘 맞고, 사용자 입장에서 결과 해석이 쉬우며 지역 확장도 서울 중심으로 시작하기 좋습니다.",
+      "서비스 정체성과 가장 잘 맞고, 신라와 서울 근현대를 함께 두면 사용자가 시대 차이를 바로 체감하기 좋습니다.",
   },
   {
     code: "JP",
@@ -852,10 +1189,30 @@ export const TIME_MACHINE_RECOMMENDATIONS = [
     code: "TR",
     flag: "🇹🇷",
     name: "튀르키예",
-    strength: "2차 확장 추천",
-    headline: "보스포루스와 시장, 호텔 로비 무드가 독특함",
-    recommendedEras: "1930s 이스탄불 · 1950s 보스포루스 · 1970s 아나톨리안 록",
+    strength: "즉시 추가 추천",
+    headline: "비잔틴과 오스만의 시각 차이가 매우 큼",
+    recommendedEras: "537 콘스탄티노폴리스 · 1557 오스만 이스탄불",
     reason:
-      "유럽과 아시아 경계의 도시 미감이 강하고, 건축과 실내 장식의 개성이 분명해 신선한 확장 포인트가 됩니다.",
+      "돔, 모자이크, 타일, 시장, 보스포루스 같은 오브제가 강해 고대와 제국 시대를 명확히 구분할 수 있습니다.",
+  },
+  {
+    code: "IN",
+    flag: "🇮🇳",
+    name: "인도",
+    strength: "즉시 추가 추천",
+    headline: "석굴 벽화와 무굴 궁정의 질감이 완전히 다름",
+    recommendedEras: "480 아잔타 · 1648 무굴 아그라",
+    reason:
+      "암벽 사원, 광물 안료, 대리석 정원, 자수 비단처럼 이미지 생성에서 시대 차이를 크게 만드는 재료가 많습니다.",
+  },
+  {
+    code: "EG",
+    flag: "🇪🇬",
+    name: "이집트",
+    strength: "즉시 추가 추천",
+    headline: "고대 신전과 근대 카이로의 대비가 선명함",
+    recommendedEras: "기원전 1470 테베 · 1925 카이로",
+    reason:
+      "석주, 히에로글리프, 린넨, 아르데코 호텔처럼 사용자가 한눈에 다른 시대로 읽을 수 있는 요소가 강합니다.",
   },
 ] as const satisfies readonly TimeMachineRecommendation[];
