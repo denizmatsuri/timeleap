@@ -12,7 +12,6 @@ export const metadata: Metadata = {
   description: "Timeleap 공개 여행기를 둘러보세요.",
 };
 
-const PUBLIC_DIARY_LIMIT = 12;
 function createExcerpt(body: string | null) {
   const normalizedBody = body?.replace(/\s+/g, " ").trim();
 
@@ -45,7 +44,7 @@ function formatDiaryDate(createdAt: string) {
 
 export default async function PublicDiariesPage() {
   const supabase = await createClient();
-  const diaries = await getPublicDiaries(supabase, PUBLIC_DIARY_LIMIT);
+  const diaries = await getPublicDiaries(supabase);
   const diaryCards = await Promise.all(
     diaries.map(async (diary) => {
       const { country, era } = resolveDestinationByDiary({

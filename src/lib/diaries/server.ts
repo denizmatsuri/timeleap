@@ -124,16 +124,12 @@ export async function getUserDiaries(
   return data;
 }
 
-export async function getPublicDiaries(
-  supabase: SupabaseServerClient,
-  limit: number,
-) {
+export async function getPublicDiaries(supabase: SupabaseServerClient) {
   const { data, error } = await supabase
     .from("diaries")
     .select(DIARY_COLUMNS)
     .eq("is_public", true)
-    .order("created_at", { ascending: false })
-    .limit(limit);
+    .order("created_at", { ascending: false });
 
   if (error) {
     throw new Error(`공개 Diary 목록 조회에 실패했습니다. ${error.message}`);

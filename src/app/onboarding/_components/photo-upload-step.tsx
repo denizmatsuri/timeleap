@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import type { ChangeEvent, RefObject } from "react";
 import type { PhotoItemState } from "./use-onboarding-photos";
@@ -56,10 +56,10 @@ export default function PhotoUploadStep({
             다양한 사진을 준비해 주세요
           </h2>
           <p className="max-w-3xl text-[14px] leading-[1.75] opacity-68">
-            다양한 장소, 각도, 옷, 표정에서 클로즈업 셀카와 전신 사진을
-            혼합한 다양한 종류의 사진을 업로드하는 것이 좋습니다. 다양성이 낮은
-            사진, 단체 사진, 다른 사람, 선글라스, 모자, 얼굴이 잘리거나 보이지
-            않는 사진은 업로드하지 마세요.
+            다양한 장소, 각도, 옷, 표정에서 클로즈업 셀카와 전신 사진을 혼합한
+            다양한 종류의 사진을 업로드하는 것이 좋습니다. 다양성이 낮은 사진,
+            단체 사진, 다른 사람, 선글라스, 모자, 얼굴이 잘리거나 보이지 않는
+            사진은 업로드하지 마세요.
           </p>
         </div>
 
@@ -120,7 +120,7 @@ export default function PhotoUploadStep({
         ) : null}
 
         {photos.length > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-4">
             {photos.map((photo, index) => (
               <div
                 key={photo.id}
@@ -132,7 +132,7 @@ export default function PhotoUploadStep({
                     className="h-full w-full object-cover"
                     src={photo.previewUrl ?? undefined}
                   />
-                  <div className="from-ink/55 absolute inset-x-0 bottom-0 bg-gradient-to-t to-transparent px-3 pb-3 pt-12 text-paper">
+                  <div className="from-ink/55 text-paper absolute inset-x-0 bottom-0 bg-gradient-to-t to-transparent px-3 pt-12 pb-3">
                     <div className="font-mono text-[10px] tracking-[0.12em] uppercase opacity-80">
                       Photo {index + 1}
                     </div>
@@ -145,7 +145,7 @@ export default function PhotoUploadStep({
                     </div>
                   </div>
                   <button
-                    className="bg-paper/92 text-ink absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full text-[16px] shadow-[0_10px_20px_-16px_rgba(0,0,0,.5)] disabled:cursor-not-allowed disabled:opacity-45"
+                    className="bg-paper/92 text-ink absolute top-3 right-3 flex h-9 w-9 items-center justify-center rounded-full text-[16px] shadow-[0_10px_20px_-16px_rgba(0,0,0,.5)] disabled:cursor-not-allowed disabled:opacity-45"
                     disabled={uploadPending}
                     onClick={() => {
                       onRemovePhoto(photo);
@@ -177,7 +177,7 @@ export default function PhotoUploadStep({
             onClick={onOpenFilePicker}
             type="button"
           >
-            <span className="bg-paper shadow-[0_12px_24px_-18px_rgba(0,0,0,.55)] mb-5 flex h-14 w-14 items-center justify-center rounded-full">
+            <span className="bg-paper mb-5 flex h-14 w-14 items-center justify-center rounded-full shadow-[0_12px_24px_-18px_rgba(0,0,0,.55)]">
               <svg
                 aria-hidden="true"
                 fill="none"
