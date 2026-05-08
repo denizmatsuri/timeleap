@@ -5,7 +5,6 @@ import {
   readQueryValue,
   resolveDestinationSelection,
 } from "@/lib/time-machine/destination";
-import { getCurrentUserFaceImageUrls } from "@/lib/time-machine/face-image-urls";
 import { getDestinationCountryCoordinates } from "@/lib/time-machine/geo";
 import { getEraEmoji } from "@/lib/time-machine/presentation";
 
@@ -52,7 +51,6 @@ export default async function TimeMachineResultPage({
     eraId: readQueryValue(resolvedSearchParams.era),
   });
   const coordinates = getDestinationCountryCoordinates(country.code);
-  const profilePhotoUrls = await getCurrentUserFaceImageUrls();
 
   return (
     <DepartureScreen
@@ -66,7 +64,6 @@ export default async function TimeMachineResultPage({
       generationRequestId={generationRequestId}
       latitude={coordinates.lat}
       longitude={coordinates.lng}
-      profilePhotoUrls={profilePhotoUrls}
     />
   );
 }

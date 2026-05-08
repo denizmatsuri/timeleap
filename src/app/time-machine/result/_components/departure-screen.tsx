@@ -8,6 +8,7 @@ import {
   getDiaryGenerationStatus,
 } from "@/actions/time-machine";
 import ChronoProfilePhoto from "@/app/time-machine/_components/chrono-profile-photo";
+import { getCurrentUserFaceImageUrlsFromBrowser } from "@/lib/time-machine/client-face-image-urls";
 import styles from "@/app/time-machine/result/_components/departure-screen.module.css";
 
 const REDIRECT_DELAY_MS = 3000;
@@ -26,7 +27,6 @@ type DepartureScreenProps = {
   generationRequestId: string;
   latitude: number;
   longitude: number;
-  profilePhotoUrls: string[];
 };
 
 type SignalSection = "arrival" | "start" | "wait";
@@ -185,7 +185,6 @@ export default function DepartureScreen({
   generationRequestId,
   latitude,
   longitude,
-  profilePhotoUrls,
 }: DepartureScreenProps) {
   const router = useRouter();
   const generationPromiseRef = useRef<Promise<GenerationFlowResult> | null>(
@@ -197,6 +196,7 @@ export default function DepartureScreen({
   );
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [hasArrived, setHasArrived] = useState(false);
+  const [profilePhotoUrls, setProfilePhotoUrls] = useState<string[]>([]);
   const [retryCount, setRetryCount] = useState(0);
   const [signalTick, setSignalTick] = useState(0);
   const [, startTransition] = useTransition();
@@ -303,6 +303,26 @@ export default function DepartureScreen({
       ] as const,
     [countryName, eraLabel, eraTitle],
   );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void getCurrentUserFaceImageUrlsFromBrowser()
+      .then((urls) => {
+        if (!cancelled) {
+          setProfilePhotoUrls(urls);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setProfilePhotoUrls([]);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let step = 0;
