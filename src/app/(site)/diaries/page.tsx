@@ -1,6 +1,5 @@
-import Image from "next/image";
-import Link from "next/link";
 import type { Metadata } from "next";
+import DiaryPhotoCard from "@/components/diaries/diary-photo-card";
 import {
   createDiaryHeroImageUrlOrNull,
   getPublicDiaries,
@@ -14,7 +13,6 @@ export const metadata: Metadata = {
 };
 
 const PUBLIC_DIARY_LIMIT = 12;
-
 function createExcerpt(body: string | null) {
   const normalizedBody = body?.replace(/\s+/g, " ").trim();
 
@@ -22,9 +20,11 @@ function createExcerpt(body: string | null) {
     return "아직 공개된 여행기의 본문이 준비되지 않았습니다.";
   }
 
-  return normalizedBody.length > 96
-    ? `${normalizedBody.slice(0, 96)}...`
-    : normalizedBody;
+  if (normalizedBody.length <= 96) {
+    return normalizedBody;
+  }
+
+  return `${normalizedBody.slice(0, 96)}…`;
 }
 
 function formatDiaryDate(createdAt: string) {
@@ -58,6 +58,7 @@ export default async function PublicDiariesPage() {
         countryFlag: country.flag,
         countryName: country.name,
         createdAtLabel: formatDiaryDate(diary.created_at),
+        eraTone: era.tone,
         eraTitle: era.title,
         eraYear: era.year,
         excerpt: createExcerpt(diary.body),
@@ -86,47 +87,24 @@ export default async function PublicDiariesPage() {
       </section>
 
       {diaryCards.length > 0 ? (
-        <section className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {diaryCards.map((diary) => (
-            <Link
+        <section className="grid grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-3">
+          {diaryCards.map((diary, index) => (
+            <DiaryPhotoCard
               key={diary.id}
+              countryFlag={diary.countryFlag}
+              countryName={diary.countryName}
+              createdAtLabel={diary.createdAtLabel}
+              eraTone={diary.eraTone}
+              eraYear={diary.eraYear}
+              excerpt={diary.excerpt}
+              footerLabel={`PUBLIC · ${diary.city} · ${diary.eraTitle}`}
               href={`/diaries/${diary.id}`}
-              className="border-ink/12 bg-paper/75 group overflow-hidden rounded-[14px] border shadow-[0_18px_40px_-30px_rgba(0,0,0,.45)] transition-transform hover:-translate-y-1"
-            >
-              <div className="bg-paper-3 relative aspect-[4/3] overflow-hidden">
-                {diary.heroImageUrl ? (
-                  <Image
-                    src={diary.heroImageUrl}
-                    alt={`${diary.countryName} ${diary.eraTitle} 여행 이미지`}
-                    fill
-                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                    className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_35%_25%,rgba(255,255,255,.45),transparent_26%),linear-gradient(135deg,#d8c39e,#8f6b48)]">
-                    <span className="text-[42px]">{diary.countryFlag}</span>
-                  </div>
-                )}
-              </div>
-              <div className="p-5">
-                <div className="mb-3 flex items-center justify-between gap-3 font-mono text-[10px] tracking-[.1em] uppercase opacity-55">
-                  <span>
-                    {diary.countryName} · {diary.eraYear}
-                  </span>
-                  <span>{diary.createdAtLabel}</span>
-                </div>
-                <h2 className="font-display text-[25px] leading-[1.05]">
-                  {diary.title}
-                </h2>
-                <p className="mt-3 text-[13px] leading-[1.65] opacity-65">
-                  {diary.excerpt}
-                </p>
-                <div className="mt-5 flex flex-wrap gap-2 font-mono text-[10px] tracking-[.08em] uppercase opacity-55">
-                  <span>{diary.city}</span>
-                  <span>{diary.eraTitle}</span>
-                </div>
-              </div>
-            </Link>
+              imageAlt={`${diary.countryName} ${diary.eraTitle} 대표 사진`}
+              imageUrl={diary.heroImageUrl}
+              index={index}
+              title={diary.title}
+              titleElement="h2"
+            />
           ))}
         </section>
       ) : (
