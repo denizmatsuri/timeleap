@@ -3,6 +3,12 @@ import "server-only";
 import type { ReferenceImageInput } from "@/lib/ai/gemini";
 
 const OPENAI_IMAGE_EDIT_URL = "https://api.openai.com/v1/images/edits";
+const OPENAI_IMAGE_EDIT_MAX_IMAGE_BYTES = 50 * 1024 * 1024;
+const OPENAI_SUPPORTED_REFERENCE_IMAGE_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
 
 function getOpenAiApiKey() {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -85,15 +91,36 @@ export async function generateDiaryHeroImageWithOpenAI({
   formData.append("size", size);
   formData.append("n", "1");
 
-  referenceImages.forEach((referenceImage, index) => {
+  for (const [index, referenceImage] of referenceImages.entries()) {
+    if (
+      !OPENAI_SUPPORTED_REFERENCE_IMAGE_MIME_TYPES.has(referenceImage.mimeType)
+    ) {
+      throw new Error(
+        `GPT 참조 이미지 ${index + 1}번은 AI용 JPG/PNG/WebP가 아닙니다. 얼굴 사진을 다시 업로드해 주세요.`,
+      );
+    }
+
     const buffer = Buffer.from(referenceImage.base64Data, "base64");
+
+    if (buffer.length === 0) {
+      throw new Error(
+        `GPT 참조 이미지 ${index + 1}번 파일이 비어 있습니다. 얼굴 사진을 다시 업로드해 주세요.`,
+      );
+    }
+
+    if (buffer.length > OPENAI_IMAGE_EDIT_MAX_IMAGE_BYTES) {
+      throw new Error(
+        `GPT 참조 이미지 ${index + 1}번의 용량이 OpenAI 제한을 초과했습니다.`,
+      );
+    }
+
     const blob = new Blob([new Uint8Array(buffer)], {
       type: referenceImage.mimeType,
     });
     const extension = inferExtensionFromMimeType(referenceImage.mimeType);
 
     formData.append("image[]", blob, `reference-${index + 1}.${extension}`);
-  });
+  }
 
   const response = await fetch(OPENAI_IMAGE_EDIT_URL, {
     method: "POST",

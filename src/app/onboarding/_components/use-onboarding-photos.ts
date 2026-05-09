@@ -6,8 +6,8 @@ import {
   useState,
   type ChangeEvent,
 } from "react";
+import { uploadProfileFaceImage } from "@/actions/profile-face-images";
 import { createClient as createSupabaseClient } from "@/lib/supabase/client";
-import type { TablesInsert } from "@/types/database.types";
 
 export type PhotoItemState = {
   fileName: string;
@@ -59,44 +59,6 @@ function createDraftPhoto(file: File, previewUrl: string): SelectedPhoto {
     previewUrl,
     storagePath: null,
   };
-}
-
-function sanitizeFileBaseName(fileName: string) {
-  const [baseName] = fileName.split(".");
-  const sanitizedBaseName = baseName
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-
-  return sanitizedBaseName || "face-photo";
-}
-
-function getFileExtension(file: File) {
-  const [, rawExtension = ""] = file.name.split(/\.(?=[^.]+$)/);
-
-  if (/^[a-z0-9]+$/i.test(rawExtension)) {
-    return rawExtension.toLowerCase();
-  }
-
-  const mimeExtension = file.type.split("/")[1]?.toLowerCase();
-
-  if (mimeExtension === "jpeg") {
-    return "jpg";
-  }
-
-  if (mimeExtension && /^[a-z0-9]+$/.test(mimeExtension)) {
-    return mimeExtension;
-  }
-
-  return "jpg";
-}
-
-function createFaceImageStoragePath(userId: string, file: File) {
-  const storageKey = createPhotoId();
-  const fileBaseName = sanitizeFileBaseName(file.name);
-  const extension = getFileExtension(file);
-
-  return `${userId}/${storageKey}-${fileBaseName}.${extension}`;
 }
 
 function revokePreviewUrl(previewUrl: string | null) {
@@ -248,41 +210,18 @@ export function useOnboardingPhotos({
     selectedPhotoCount <= MAX_PHOTO_COUNT;
   const primaryPhoto = photos[0]?.previewUrl ?? null;
 
-  async function createPhotoRecord(storagePath: string) {
-    const payload: TablesInsert<"profile_face_images"> = {
-      storage_path: storagePath,
-      user_id: userId,
-    };
-    const { error } = await supabase
-      .from("profile_face_images")
-      .insert(payload);
+  async function uploadPhotoFile(file: File): Promise<string> {
+    const formData = new FormData();
 
-    if (error) {
-      throw error;
-    }
-  }
+    formData.append("photo", file);
 
-  async function uploadPhotoFile(file: File) {
-    const storagePath = createFaceImageStoragePath(userId, file);
-    const { error: uploadError } = await supabase.storage
-      .from(FACE_IMAGE_BUCKET)
-      .upload(storagePath, file, {
-        contentType: file.type || undefined,
-        upsert: false,
-      });
+    const result = await uploadProfileFaceImage(formData);
 
-    if (uploadError) {
-      throw uploadError;
+    if (result.storagePath === null) {
+      throw new Error(result.error);
     }
 
-    try {
-      await createPhotoRecord(storagePath);
-    } catch {
-      await supabase.storage.from(FACE_IMAGE_BUCKET).remove([storagePath]);
-      throw new Error("Failed to create photo record");
-    }
-
-    return storagePath;
+    return result.storagePath;
   }
 
   async function removeUploadedPhoto(storagePath: string) {

@@ -296,6 +296,7 @@ export async function generateDiaryFromSelection({
       .from("profile_face_images")
       .select("storage_path")
       .eq("user_id", user.id)
+      .order("created_at", { ascending: true })
       .limit(MAX_REFERENCE_IMAGES);
 
     if (profileError) {
