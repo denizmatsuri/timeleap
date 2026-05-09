@@ -20,6 +20,11 @@ import {
   generateDiaryText,
   type ReferenceImageInput,
 } from "@/lib/ai/gemini";
+import { generateDiaryHeroImageWithOpenAI } from "@/lib/ai/openai-image";
+import {
+  buildDiaryGenerationModelMetadata,
+  resolveDiaryGenerationModel,
+} from "@/lib/ai/generation-models";
 import { buildGenerateImagePrompt } from "@/lib/prompts/diary/generate-image-prompt";
 import { buildGenerateTextPrompt } from "@/lib/prompts/diary/generate-text-prompt";
 import { createClient } from "@/lib/supabase/server";
@@ -34,6 +39,7 @@ export type GenerateDiaryFromSelectionInput = {
   countryCode: string;
   eraId: string;
   generationRequestId: string;
+  generationModelId?: string | null;
 };
 export type DiaryGenerationStatus =
   | { status: "failed"; message: string }
@@ -229,6 +235,7 @@ export async function generateDiaryFromSelection({
   countryCode,
   eraId,
   generationRequestId,
+  generationModelId,
 }: GenerateDiaryFromSelectionInput): Promise<DiaryGenerationStatus> {
   const supabase = await createClient();
   const {
@@ -243,6 +250,10 @@ export async function generateDiaryFromSelection({
   const { country, era } = resolveDestinationSelection({
     countryCode,
     eraId,
+  });
+  const generationModel = resolveDiaryGenerationModel(generationModelId);
+  const initialModelMetadata = buildDiaryGenerationModelMetadata({
+    generationModel,
   });
   const existingDiary = await getDiaryByGenerationRequestId({
     generationRequestId,
@@ -261,6 +272,7 @@ export async function generateDiaryFromSelection({
     countryCode: country.code,
     eraId: era.id,
     generationRequestId,
+    metadata: initialModelMetadata,
     supabase,
     userId: user.id,
   });
@@ -336,11 +348,29 @@ export async function generateDiaryFromSelection({
       wardrobe: era.wardrobe,
     });
     const generatedText = await generateDiaryText({
+      fallbackModels: generationModel.text.fallbackModels,
+      model: generationModel.text.model,
       prompt: textPrompt,
     });
-    const generatedImage = await generateDiaryHeroImage({
-      prompt: imagePrompt,
-      referenceImages,
+    const generatedImage =
+      generationModel.image.provider === "openai"
+        ? await generateDiaryHeroImageWithOpenAI({
+            model: generationModel.image.model,
+            prompt: imagePrompt,
+            quality: generationModel.image.quality,
+            referenceImages,
+            size: generationModel.image.size,
+          })
+        : await generateDiaryHeroImage({
+            imageSize: generationModel.image.size,
+            model: generationModel.image.model,
+            prompt: imagePrompt,
+            referenceImages,
+          });
+    const finalModelMetadata = buildDiaryGenerationModelMetadata({
+      generationModel,
+      textModel: generatedText.textModel,
+      textProvider: generatedText.textProvider,
     });
     const heroImagePath = await uploadGeneratedHeroImage({
       supabase,
@@ -355,6 +385,7 @@ export async function generateDiaryFromSelection({
       eraId: era.id,
       generationRequestId,
       heroImagePath,
+      metadata: finalModelMetadata,
       title: generatedText.title || buildFallbackDiaryTitle(heroScene.title),
       userId: user.id,
     });
@@ -363,6 +394,7 @@ export async function generateDiaryFromSelection({
       await markGenerationJobSucceeded({
         diaryId: savedDiary.id,
         generationRequestId,
+        metadata: finalModelMetadata,
         supabase,
         userId: user.id,
       });

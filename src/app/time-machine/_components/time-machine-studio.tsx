@@ -20,6 +20,10 @@ import type {
 import type { GeometryCollection, Topology } from "topojson-specification";
 import worldTopologyJson from "world-atlas/countries-110m.json";
 import {
+  DEFAULT_DIARY_GENERATION_MODEL_ID,
+  DIARY_GENERATION_MODELS,
+} from "@/lib/ai/generation-models";
+import {
   DESTINATION_COUNTRIES,
   type DestinationCountry,
   type DestinationEra,
@@ -160,6 +164,9 @@ export default function TimeMachineStudio({
   const [selectedEraId, setSelectedEraId] = useState<string>(
     initialDestination.era.id,
   );
+  const [selectedGenerationModelId, setSelectedGenerationModelId] = useState(
+    DEFAULT_DIARY_GENERATION_MODEL_ID,
+  );
   const [rotateLng, setRotateLng] = useState(initialRotateLng);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -181,11 +188,16 @@ export default function TimeMachineStudio({
     activeCountry.eras.find((era) => era.id === selectedEraId) ??
     activeCountry.eras[0];
   const activeEraEmoji = getEraEmoji(activeEra.id);
+  const activeGenerationModel =
+    DIARY_GENERATION_MODELS.find((generationModel) => {
+      return generationModel.id === selectedGenerationModelId;
+    }) ?? DIARY_GENERATION_MODELS[0];
 
   const handleDepartTimeMachine = () => {
     const searchParams = new URLSearchParams({
       country: activeCountry.code,
       era: activeEra.id,
+      model: activeGenerationModel.id,
       requestId: crypto.randomUUID(),
     });
 
@@ -683,6 +695,34 @@ export default function TimeMachineStudio({
             </div>
           </section>
 
+          <section className={styles.tmCamera}>
+            <div className={styles.tmLabelSmall}>CAMERA</div>
+            <div className={styles.tmLabelBig}>어떤 카메라로 찍을까요</div>
+            <div className={styles.cameraOptions}>
+              {DIARY_GENERATION_MODELS.map((generationModel) => (
+                <button
+                  key={generationModel.id}
+                  type="button"
+                  className={cn(
+                    styles.cameraOption,
+                    generationModel.id === activeGenerationModel.id &&
+                      styles.cameraOptionActive,
+                  )}
+                  onClick={() =>
+                    setSelectedGenerationModelId(generationModel.id)
+                  }
+                >
+                  <span className={styles.cameraName}>
+                    {generationModel.label} 카메라
+                  </span>
+                  <span className={styles.cameraMeta}>
+                    {generationModel.shortLabel} · {generationModel.note}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+
           <div className={styles.tmActions}>
             <button
               type="button"
@@ -702,10 +742,11 @@ export default function TimeMachineStudio({
 
           <div className={styles.tmMeta}>
             <div>
-              예상 소요시간 · <strong>30–60초</strong>
+              예상 소요시간 ·{" "}
+              <strong>{activeGenerationModel.durationLabel}</strong>
             </div>
             <div>
-              결과물 · <strong>사진 + 일기</strong>
+              카메라 · <strong>{activeGenerationModel.shortLabel}</strong>
             </div>
           </div>
         </aside>

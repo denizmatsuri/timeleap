@@ -1,10 +1,11 @@
 import "server-only";
 
+import type { DiaryGenerationModelMetadata } from "@/lib/ai/generation-models";
 import type { createClient } from "@/lib/supabase/server";
 import type { Tables } from "@/types/database.types";
 
 const GENERATION_JOB_COLUMNS =
-  "id,user_id,country_code,era_id,status,diary_id,error_message,lease_expires_at,started_at,completed_at,failed_at,created_at,updated_at";
+  "id,user_id,country_code,era_id,status,diary_id,error_message,lease_expires_at,started_at,completed_at,failed_at,created_at,updated_at,image_provider,image_model,image_quality,image_size,text_provider,text_model";
 const GENERATION_JOB_LEASE_MS = 10 * 60 * 1000;
 const RUNNING_STATUS = "running";
 const SUCCEEDED_STATUS = "succeeded";
@@ -66,12 +67,14 @@ export async function createOrGetGenerationJob({
   countryCode,
   eraId,
   generationRequestId,
+  metadata,
   supabase,
   userId,
 }: {
   countryCode: string;
   eraId: string;
   generationRequestId: string;
+  metadata: DiaryGenerationModelMetadata;
   supabase: SupabaseServerClient;
   userId: string;
 }): Promise<GenerationJobClaim> {
@@ -81,8 +84,14 @@ export async function createOrGetGenerationJob({
       country_code: countryCode,
       era_id: eraId,
       id: generationRequestId,
+      image_model: metadata.imageModel,
+      image_provider: metadata.imageProvider,
+      image_quality: metadata.imageQuality,
+      image_size: metadata.imageSize,
       lease_expires_at: createLeaseExpiresAt(),
       status: RUNNING_STATUS,
+      text_model: metadata.textModel,
+      text_provider: metadata.textProvider,
       user_id: userId,
     })
     .select(GENERATION_JOB_COLUMNS)
@@ -120,11 +129,13 @@ export async function createOrGetGenerationJob({
 export async function markGenerationJobSucceeded({
   diaryId,
   generationRequestId,
+  metadata,
   supabase,
   userId,
 }: {
   diaryId: string;
   generationRequestId: string;
+  metadata: DiaryGenerationModelMetadata;
   supabase: SupabaseServerClient;
   userId: string;
 }) {
@@ -136,7 +147,13 @@ export async function markGenerationJobSucceeded({
       diary_id: diaryId,
       error_message: null,
       failed_at: null,
+      image_model: metadata.imageModel,
+      image_provider: metadata.imageProvider,
+      image_quality: metadata.imageQuality,
+      image_size: metadata.imageSize,
       status: SUCCEEDED_STATUS,
+      text_model: metadata.textModel,
+      text_provider: metadata.textProvider,
       updated_at: now,
     })
     .eq("id", generationRequestId)

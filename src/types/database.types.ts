@@ -23,7 +23,13 @@ export type Database = {
           generation_request_id: string | null
           hero_image_path: string | null
           id: string
+          image_model: string | null
+          image_provider: string | null
+          image_quality: string | null
+          image_size: string | null
           is_public: boolean
+          text_model: string | null
+          text_provider: string | null
           title: string | null
           user_id: string
         }
@@ -35,7 +41,13 @@ export type Database = {
           generation_request_id?: string | null
           hero_image_path?: string | null
           id?: string
+          image_model?: string | null
+          image_provider?: string | null
+          image_quality?: string | null
+          image_size?: string | null
           is_public?: boolean
+          text_model?: string | null
+          text_provider?: string | null
           title?: string | null
           user_id: string
         }
@@ -47,7 +59,13 @@ export type Database = {
           generation_request_id?: string | null
           hero_image_path?: string | null
           id?: string
+          image_model?: string | null
+          image_provider?: string | null
+          image_quality?: string | null
+          image_size?: string | null
           is_public?: boolean
+          text_model?: string | null
+          text_provider?: string | null
           title?: string | null
           user_id?: string
         }
@@ -63,9 +81,15 @@ export type Database = {
           error_message: string | null
           failed_at: string | null
           id: string
+          image_model: string | null
+          image_provider: string | null
+          image_quality: string | null
+          image_size: string | null
           lease_expires_at: string
           started_at: string
           status: string
+          text_model: string | null
+          text_provider: string | null
           updated_at: string
           user_id: string
         }
@@ -78,9 +102,15 @@ export type Database = {
           error_message?: string | null
           failed_at?: string | null
           id: string
+          image_model?: string | null
+          image_provider?: string | null
+          image_quality?: string | null
+          image_size?: string | null
           lease_expires_at: string
           started_at?: string
           status: string
+          text_model?: string | null
+          text_provider?: string | null
           updated_at?: string
           user_id: string
         }
@@ -93,9 +123,15 @@ export type Database = {
           error_message?: string | null
           failed_at?: string | null
           id?: string
+          image_model?: string | null
+          image_provider?: string | null
+          image_quality?: string | null
+          image_size?: string | null
           lease_expires_at?: string
           started_at?: string
           status?: string
+          text_model?: string | null
+          text_provider?: string | null
           updated_at?: string
           user_id?: string
         }

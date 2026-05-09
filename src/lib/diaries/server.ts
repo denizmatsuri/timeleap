@@ -1,10 +1,11 @@
 import "server-only";
 
+import type { DiaryGenerationModelMetadata } from "@/lib/ai/generation-models";
 import type { createClient } from "@/lib/supabase/server";
 import type { Tables } from "@/types/database.types";
 
 const DIARY_COLUMNS =
-  "id,user_id,country_code,era_id,generation_request_id,title,body,hero_image_path,is_public,created_at";
+  "id,user_id,country_code,era_id,generation_request_id,title,body,hero_image_path,is_public,created_at,image_provider,image_model,image_quality,image_size,text_provider,text_model";
 const DIARY_IMAGE_BUCKET = "diary-images";
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 export type DiaryRecord = Tables<"diaries">;
@@ -15,6 +16,7 @@ export type CreateDiaryInput = {
   eraId: string;
   generationRequestId: string;
   heroImagePath: string;
+  metadata: DiaryGenerationModelMetadata;
   title: string;
   userId: string;
 };
@@ -27,6 +29,7 @@ export async function createDiary(
     eraId,
     generationRequestId,
     heroImagePath,
+    metadata,
     title,
     userId,
   }: CreateDiaryInput,
@@ -39,6 +42,12 @@ export async function createDiary(
       era_id: eraId,
       generation_request_id: generationRequestId,
       hero_image_path: heroImagePath,
+      image_model: metadata.imageModel,
+      image_provider: metadata.imageProvider,
+      image_quality: metadata.imageQuality,
+      image_size: metadata.imageSize,
+      text_model: metadata.textModel,
+      text_provider: metadata.textProvider,
       title,
       user_id: userId,
     })
@@ -124,12 +133,21 @@ export async function getUserDiaries(
   return data;
 }
 
-export async function getPublicDiaries(supabase: SupabaseServerClient) {
-  const { data, error } = await supabase
+export async function getPublicDiaries(
+  supabase: SupabaseServerClient,
+  limit?: number,
+) {
+  let query = supabase
     .from("diaries")
     .select(DIARY_COLUMNS)
     .eq("is_public", true)
     .order("created_at", { ascending: false });
+
+  if (typeof limit === "number") {
+    query = query.limit(limit);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     throw new Error(`공개 Diary 목록 조회에 실패했습니다. ${error.message}`);

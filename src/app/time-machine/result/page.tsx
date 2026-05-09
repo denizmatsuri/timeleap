@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import DepartureScreen from "@/app/time-machine/result/_components/departure-screen";
+import { resolveDiaryGenerationModel } from "@/lib/ai/generation-models";
 import {
   readQueryValue,
   resolveDestinationSelection,
@@ -12,6 +13,7 @@ export const metadata: Metadata = {
   title: "Departure — Timeleap",
   description: "선택한 좌표로 이동하는 Timeleap 중간 로딩 화면",
 };
+export const maxDuration = 600;
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -20,6 +22,7 @@ type ResultPageProps = {
   searchParams: Promise<{
     country?: string | string[];
     era?: string | string[];
+    model?: string | string[];
     requestId?: string | string[];
   }>;
 };
@@ -50,6 +53,9 @@ export default async function TimeMachineResultPage({
     countryCode: readQueryValue(resolvedSearchParams.country),
     eraId: readQueryValue(resolvedSearchParams.era),
   });
+  const generationModel = resolveDiaryGenerationModel(
+    readQueryValue(resolvedSearchParams.model),
+  );
   const coordinates = getDestinationCountryCoordinates(country.code);
 
   return (
@@ -61,6 +67,7 @@ export default async function TimeMachineResultPage({
       eraId={era.id}
       eraLabel={era.year}
       eraTitle={era.title}
+      generationModelId={generationModel.id}
       generationRequestId={generationRequestId}
       latitude={coordinates.lat}
       longitude={coordinates.lng}

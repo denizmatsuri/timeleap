@@ -1,14 +1,18 @@
 import "server-only";
 
+import { request as createHttpsRequest } from "node:https";
+
 const GEMINI_API_BASE_URL =
   "https://generativelanguage.googleapis.com/v1beta/models";
 const DEFAULT_GEMINI_IMAGE_MODEL = "gemini-3.1-flash-image-preview";
 const DEFAULT_GEMINI_IMAGE_SIZE = "1K";
-const DEFAULT_GEMINI_TEXT_MODEL = "gemini-2.5-flash";
+const DEFAULT_GEMINI_TEXT_MODEL = "gemini-3-flash-preview";
 const DEFAULT_GEMINI_TEXT_FALLBACK_MODELS = [
+  "gemini-2.5-flash",
   "gemini-2.5-flash-lite",
   "gemini-2.0-flash",
 ] as const;
+const GEMINI_REQUEST_TIMEOUT_MS = 10 * 60 * 1000;
 const GEMINI_TRANSIENT_RETRY_DELAYS_MS = [1500, 3500];
 
 type GeminiInlineData = {
@@ -34,6 +38,11 @@ type GeminiGenerateContentResponse = {
     message?: string;
     status?: string;
   };
+};
+
+type GeminiHttpResponse = {
+  body: string;
+  status: number;
 };
 
 type GeminiErrorDetails = {
@@ -100,42 +109,36 @@ function getGeminiApiKey() {
   return apiKey;
 }
 
-function getGeminiImageModel() {
-  const model = process.env.GEMINI_IMAGE_MODEL ?? DEFAULT_GEMINI_IMAGE_MODEL;
+function getGeminiImageModel(modelOverride?: string) {
+  const model = modelOverride ?? DEFAULT_GEMINI_IMAGE_MODEL;
 
   if (!model.toLowerCase().includes("image")) {
     throw new Error(
-      `GEMINI_IMAGE_MODEL은 이미지 생성 모델이어야 합니다. 현재 값: ${model}`,
+      `Gemini 이미지 모델은 image 모델이어야 합니다. 현재 값: ${model}`,
     );
   }
 
   return model;
 }
 
-function getGeminiImageSize() {
-  return process.env.GEMINI_IMAGE_SIZE ?? DEFAULT_GEMINI_IMAGE_SIZE;
-}
-
-function getGeminiTextModel() {
-  return process.env.GEMINI_TEXT_MODEL ?? DEFAULT_GEMINI_TEXT_MODEL;
-}
-
-function parseModelList(value: string | undefined) {
-  return value
-    ?.split(",")
-    .map((model) => model.trim())
-    .filter(Boolean);
+function getGeminiImageSize(imageSizeOverride?: string) {
+  return imageSizeOverride ?? DEFAULT_GEMINI_IMAGE_SIZE;
 }
 
 function getUniqueModels(models: readonly string[]) {
   return Array.from(new Set(models));
 }
 
-function getGeminiTextModels() {
+function getGeminiTextModels({
+  fallbackModels,
+  model,
+}: {
+  fallbackModels?: readonly string[];
+  model?: string;
+}) {
   return getUniqueModels([
-    getGeminiTextModel(),
-    ...(parseModelList(process.env.GEMINI_TEXT_FALLBACK_MODELS) ??
-      DEFAULT_GEMINI_TEXT_FALLBACK_MODELS),
+    model ?? DEFAULT_GEMINI_TEXT_MODEL,
+    ...(fallbackModels ?? DEFAULT_GEMINI_TEXT_FALLBACK_MODELS),
   ]);
 }
 
@@ -164,7 +167,7 @@ function createGeminiErrorDetails({
   if (isQuotaError) {
     return {
       fallbackable: true,
-      message: `Gemini 모델 사용량 한도를 초과했습니다. Google AI Studio에서 프로젝트 billing/quota를 확인하거나 GEMINI_IMAGE_MODEL, GEMINI_TEXT_MODEL 환경변수로 사용 가능한 모델을 지정해 주세요. 현재 실패 모델: ${model}`,
+      message: `Gemini 모델 사용량 한도를 초과했습니다. Google AI Studio에서 프로젝트 billing/quota를 확인하거나 사용 가능한 모델 프리셋을 선택해 주세요. 현재 실패 모델: ${model}`,
       retryable: false,
     };
   }
@@ -182,6 +185,91 @@ function createGeminiErrorDetails({
     message: fallbackMessage || "Gemini 요청에 실패했습니다.",
     retryable: false,
   };
+}
+
+function createGeminiNetworkError({
+  error,
+  model,
+}: {
+  error: unknown;
+  model: string;
+}) {
+  const cause =
+    error instanceof Error && error.cause instanceof Error
+      ? ` ${error.cause.message}`
+      : "";
+  const message =
+    error instanceof Error && error.message.trim()
+      ? error.message.trim()
+      : "network error";
+
+  return new GeminiRequestError({
+    fallbackable: true,
+    message: `Gemini 응답 수신에 실패했습니다. 모델 ${model} 요청이 너무 오래 걸렸거나 네트워크 연결이 끊겼습니다. 원인: ${message}${cause}`,
+    model,
+    retryable: false,
+  });
+}
+
+function createGeminiRequestUrl({ model }: { model: string }) {
+  return new URL(`${GEMINI_API_BASE_URL}/${model}:generateContent`);
+}
+
+function parseJsonResponse<T>(body: string) {
+  if (!body.trim()) {
+    return undefined;
+  }
+
+  return JSON.parse(body) as T;
+}
+
+async function postGeminiJson({
+  model,
+  payload,
+}: {
+  model: string;
+  payload: GenerateContentPayload;
+}) {
+  const url = createGeminiRequestUrl({ model });
+  const body = JSON.stringify(payload);
+
+  return new Promise<GeminiHttpResponse>((resolve, reject) => {
+    const clientRequest = createHttpsRequest(
+      url,
+      {
+        headers: {
+          "Content-Length": Buffer.byteLength(body),
+          "Content-Type": "application/json",
+          "x-goog-api-key": getGeminiApiKey(),
+        },
+        method: "POST",
+      },
+      (response) => {
+        const chunks: Buffer[] = [];
+
+        response.on("data", (chunk: Buffer | string) => {
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        });
+        response.on("end", () => {
+          resolve({
+            body: Buffer.concat(chunks).toString("utf8"),
+            status: response.statusCode ?? 0,
+          });
+        });
+      },
+    );
+
+    clientRequest.setTimeout(GEMINI_REQUEST_TIMEOUT_MS, () => {
+      clientRequest.destroy(
+        new Error(
+          `Gemini 요청 제한 시간 ${GEMINI_REQUEST_TIMEOUT_MS / 1000}초를 초과했습니다.`,
+        ),
+      );
+    });
+    clientRequest.on("error", reject);
+    clientRequest.write(body);
+    clientRequest.end();
+  });
 }
 
 function wait(milliseconds: number) {
@@ -235,43 +323,43 @@ async function generateContent({
     attemptIndex <= GEMINI_TRANSIENT_RETRY_DELAYS_MS.length;
     attemptIndex += 1
   ) {
-    const response = await fetch(
-      `${GEMINI_API_BASE_URL}/${model}:generateContent`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": getGeminiApiKey(),
-        },
-        body: JSON.stringify(payload),
-        cache: "no-store",
-      },
-    );
+    try {
+      const response = await postGeminiJson({
+        model,
+        payload,
+      });
 
-    const data = (await response.json()) as
-      | GeminiGenerateContentResponse
-      | undefined;
+      const data = parseJsonResponse<GeminiGenerateContentResponse>(
+        response.body,
+      );
 
-    if (response.ok) {
-      return data ?? {};
+      if (response.status >= 200 && response.status < 300) {
+        return data ?? {};
+      }
+
+      const errorDetails = createGeminiErrorDetails({
+        fallbackMessage: data?.error?.message ?? "Gemini 요청에 실패했습니다.",
+        model,
+        responseStatus: response.status,
+      });
+      const retryDelay = GEMINI_TRANSIENT_RETRY_DELAYS_MS[attemptIndex];
+
+      if (errorDetails.retryable && retryDelay) {
+        await wait(retryDelay);
+        continue;
+      }
+
+      throw new GeminiRequestError({
+        ...errorDetails,
+        model,
+      });
+    } catch (error) {
+      if (isGeminiRequestError(error)) {
+        throw error;
+      }
+
+      throw createGeminiNetworkError({ error, model });
     }
-
-    const errorDetails = createGeminiErrorDetails({
-      fallbackMessage: data?.error?.message ?? "Gemini 요청에 실패했습니다.",
-      model,
-      responseStatus: response.status,
-    });
-    const retryDelay = GEMINI_TRANSIENT_RETRY_DELAYS_MS[attemptIndex];
-
-    if (errorDetails.retryable && retryDelay) {
-      await wait(retryDelay);
-      continue;
-    }
-
-    throw new GeminiRequestError({
-      ...errorDetails,
-      model,
-    });
   }
 
   throw new Error("Gemini 요청에 실패했습니다.");
@@ -299,14 +387,20 @@ function parseDiaryTextResponse(rawText: string) {
 }
 
 export async function generateDiaryHeroImage({
+  imageSize,
+  model,
   prompt,
   referenceImages,
 }: {
+  imageSize?: string;
+  model?: string;
   prompt: string;
   referenceImages: ReferenceImageInput[];
 }) {
+  const resolvedModel = getGeminiImageModel(model);
+  const resolvedImageSize = getGeminiImageSize(imageSize);
   const response = await generateContent({
-    model: getGeminiImageModel(),
+    model: resolvedModel,
     payload: {
       contents: [
         {
@@ -325,7 +419,7 @@ export async function generateDiaryHeroImage({
       generationConfig: {
         imageConfig: {
           aspectRatio: "4:5",
-          imageSize: getGeminiImageSize(),
+          imageSize: resolvedImageSize,
         },
         responseModalities: ["TEXT", "IMAGE"],
       },
@@ -339,12 +433,27 @@ export async function generateDiaryHeroImage({
 
   return {
     buffer: Buffer.from(imagePart.inlineData.data, "base64"),
+    imageModel: resolvedModel,
+    imageProvider: "google" as const,
+    imageQuality: resolvedImageSize,
+    imageSize: resolvedImageSize,
     mimeType: imagePart.inlineData.mimeType,
   };
 }
 
-export async function generateDiaryText({ prompt }: { prompt: string }) {
-  const textModels = getGeminiTextModels();
+export async function generateDiaryText({
+  fallbackModels,
+  model,
+  prompt,
+}: {
+  fallbackModels?: readonly string[];
+  model?: string;
+  prompt: string;
+}) {
+  const textModels = getGeminiTextModels({
+    fallbackModels,
+    model,
+  });
   let lastError: unknown = null;
 
   for (const [modelIndex, model] of textModels.entries()) {
@@ -385,7 +494,11 @@ export async function generateDiaryText({ prompt }: { prompt: string }) {
         throw new Error("Gemini 텍스트 응답이 비어 있습니다.");
       }
 
-      return parseDiaryTextResponse(rawText);
+      return {
+        ...parseDiaryTextResponse(rawText),
+        textModel: model,
+        textProvider: "google" as const,
+      };
     } catch (error) {
       lastError = error;
 

@@ -8,12 +8,13 @@ import {
   getDiaryGenerationStatus,
 } from "@/actions/time-machine";
 import ChronoProfilePhoto from "@/app/time-machine/_components/chrono-profile-photo";
+import type { DiaryGenerationModelId } from "@/lib/ai/generation-models";
 import { getCurrentUserFaceImageUrlsFromBrowser } from "@/lib/time-machine/client-face-image-urls";
 import styles from "@/app/time-machine/result/_components/departure-screen.module.css";
 
 const REDIRECT_DELAY_MS = 3000;
 const STATUS_POLL_INTERVAL_MS = 2000;
-const STATUS_POLL_TIMEOUT_MS = 5 * 60 * 1000;
+const STATUS_POLL_TIMEOUT_MS = 10 * 60 * 1000;
 const TRANSMISSION_INTERVAL_MS = 2700;
 
 type DepartureScreenProps = {
@@ -24,6 +25,7 @@ type DepartureScreenProps = {
   eraId: string;
   eraLabel: string;
   eraTitle: string;
+  generationModelId: DiaryGenerationModelId;
   generationRequestId: string;
   latitude: number;
   longitude: number;
@@ -40,6 +42,7 @@ type ChronoSignal = {
 type GenerationFlowInput = {
   countryCode: string;
   eraId: string;
+  generationModelId: DiaryGenerationModelId;
   generationRequestId: string;
 };
 
@@ -151,11 +154,13 @@ async function waitForExistingGeneration({
 async function runGenerationFlow({
   countryCode,
   eraId,
+  generationModelId,
   generationRequestId,
 }: GenerationFlowInput): Promise<GenerationFlowResult> {
   const result = await generateDiaryFromSelection({
     countryCode,
     eraId,
+    generationModelId,
     generationRequestId,
   });
 
@@ -182,6 +187,7 @@ export default function DepartureScreen({
   eraId,
   eraLabel,
   eraTitle,
+  generationModelId,
   generationRequestId,
   latitude,
   longitude,
@@ -379,6 +385,7 @@ export default function DepartureScreen({
       generationPromiseRef.current = runGenerationFlow({
         countryCode,
         eraId,
+        generationModelId,
         generationRequestId,
       });
     }
@@ -419,7 +426,14 @@ export default function DepartureScreen({
         window.clearTimeout(timer);
       }
     };
-  }, [countryCode, eraId, generationRequestId, retryCount, router]);
+  }, [
+    countryCode,
+    eraId,
+    generationModelId,
+    generationRequestId,
+    retryCount,
+    router,
+  ]);
 
   const handleRetryGeneration = () => {
     setGenerationError(null);
